@@ -1,0 +1,5 @@
+name: GRU
+kwargs:
+  vocabulary_size: ???
+  token_embedding_size: 300
+  num_layers: 1

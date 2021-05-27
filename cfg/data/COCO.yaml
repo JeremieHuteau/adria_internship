@@ -1,0 +1,6 @@
+defaults:
+  - dataset: COCO
+
+name: CocoCaptions
+kwargs:
+  root_dir: ${..dataset.root_dir}/preprocessed

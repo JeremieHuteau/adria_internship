@@ -1,0 +1,84 @@
+defaults:
+  #- image_normalization@image.normalization.kwargs: imagenet
+  - base
+
+    #image:
+    #  # Image is resized before being cropped to train_resolution.
+    #  train_resize_size: 256
+    #  train_resolution: 224
+    #  test_resolution: 224
+    #
+    #  to_tensor:
+    #    name: ImageToTensor
+    #    kwargs: {}
+    #  normalization:
+    #    name: ImageNormalization
+    #
+    #  train_resize:
+    #    name: Resize
+    #    kwargs: 
+    #      height: ${....image.train_resize_size} 
+    #      width: ${....image.train_resize_size} 
+    #  train_crop:
+    #    name: RandomCrop
+    #    kwargs:
+    #      height: ${....image.train_resolution} 
+    #      width: ${....image.train_resolution} 
+    #
+    #  test_resize:
+    #    name: Resize
+    #    kwargs: 
+    #      height: ${....image.test_resolution} 
+    #      width: ${....image.test_resolution} 
+    #text:
+    #  normalization:
+    #    name: TextNormalization
+    #    kwargs: {}
+    #  tokenization:
+    #    name: NltkTokenization
+    #    kwargs: {}
+    #  vocabulary:
+    #    name: VocabularyEncoding
+    #    kwargs:
+    #      path: ${paths.transforms_dir}/coco_train_vocabulary.pkl
+    #  to_tensor:
+    #    name: IndicesToTensor
+    #    kwargs: {}
+
+train:
+  - ${..text.normalization}
+  - ${..image.train_resize}
+
+  - ${..image.train_crop}
+  - name: HorizontalFlip
+    kwargs: {}
+  - name: RandomRotation
+    kwargs:
+      degrees: 45
+  - name: GridDropout
+    kwargs: {}
+  - name: ColorJitter
+    kwargs:
+      brightness: 0.4
+      contrast: 0.4
+      saturation: 0.4
+      hue: 0.1 
+
+  - ${..image.normalization}
+  - ${..image.to_tensor}
+
+  - ${..text.tokenization}
+  - ${..text.vocabulary}
+  - ${..text.to_tensor}
+
+test:
+  - ${..text.normalization}
+
+  - ${..image.test_resize}
+  - ${..image.normalization}
+  - ${..image.to_tensor}
+
+  - ${..text.tokenization}
+  - ${..text.vocabulary}
+  - ${..text.to_tensor}
+

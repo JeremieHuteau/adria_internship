@@ -1,0 +1,43 @@
+defaults:
+  - image_normalization@image.normalization.kwargs: imagenet
+
+image:
+  # Image is resized before being cropped to train_resolution.
+  train_resize_size: 256
+  train_resolution: 224
+  test_resolution: 256
+
+  train_resize:
+    name: Resize
+    kwargs: 
+      height: ${....image.train_resize_size} 
+      width: ${....image.train_resize_size} 
+  train_crop:
+    name: RandomCrop
+    kwargs:
+      height: ${....image.train_resolution} 
+      width: ${....image.train_resolution} 
+  test_resize:
+    name: Resize
+    kwargs: 
+      height: ${....image.test_resolution} 
+      width: ${....image.test_resolution} 
+  normalization:
+    name: ImageNormalization
+  to_tensor:
+    name: ImageToTensor
+    kwargs: {}
+text:
+  normalization:
+    name: TextNormalization
+    kwargs: {}
+  tokenization:
+    name: NltkTokenization
+    kwargs: {}
+  vocabulary:
+    name: VocabularyEncoding
+    kwargs:
+      path: ${paths.transforms_dir}/${data.dataset.name}_train_vocabulary.pkl
+  to_tensor:
+    name: IndicesToTensor
+    kwargs: {}

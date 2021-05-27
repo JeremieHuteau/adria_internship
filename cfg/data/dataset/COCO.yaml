@@ -1,0 +1,2 @@
+name: COCO
+root_dir: ${paths.data_dir}/COCO

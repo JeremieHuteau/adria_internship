@@ -1,0 +1,46 @@
+# This Makefile contains variables specific to the environment the scripts
+# will run in. Modify them to suit your setup.
+
+DATA_DIR = $(CURDIR)/data
+# Results of the scripts: models, logs
+ARTIFACTS_DIR = $(CURDIR)/artifacts
+
+# (C|G)PU
+DEVICE = GPU
+
+# Disable the display of graphs, dynamic progression bars, etc...
+# `False` for regular systems, `True` for computing clusters.
+NON_INTERACTIVE_ENV = False
+
+CONDA_ENV_NAME = vse
+
+###############################################################################
+# SENSIBLE DEFAULTS (probably don't need to change them)
+###############################################################################
+SRC_DIR = $(CURDIR)/src
+CFG_DIR = $(CURDIR)/cfg
+
+LOGS_DIR = $(ARTIFACTS_DIR)/logs
+CHECKPOINTS_DIR = $(ARTIFACTS_DIR)/checkpoints
+TRANSFORMS_DIR = $(ARTIFACTS_DIR)/transforms
+
+###############################################################################
+# CONSTANTS / DERIVED VARIABLES (should work as is)
+###############################################################################
+CONDA_ROOT = $(shell conda info --base)
+
+DEFAULT_NUM_CPUS = \
+	$(shell grep 'cpu cores' /proc/cpuinfo | uniq | sed -e 's/.*: //')
+
+ifeq ($(DEVICE), GPU)
+	DEFAULT_NUM_GPUS = 1
+else
+	DEFAULT_NUM_GPUS = 0
+endif
+
+CPU_ENV_YAML = environment_cpu.yaml
+GPU_ENV_YAML = environment_gpu.yaml
+CONDA_ENV_YAML = $(SETUP_DIR)/$($(DEVICE)_ENV_YAML)
+
+PYTHON = $(CONDA_ROOT)/envs/$(CONDA_ENV_NAME)/bin/python
+

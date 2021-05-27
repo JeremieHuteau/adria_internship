@@ -1,0 +1,80 @@
+defaults:
+  - image_normalization@image.normalization.kwargs: imagenet
+
+image:
+  train_resolution: 224
+  test_resolution: 224
+
+  # Image is resized before being cropped to train_resolution.
+  train_resize_size: 256
+
+  to_tensor:
+    name: ToTensor
+    kwargs: {}
+
+  normalization:
+    name: Normalization
+
+  train:
+    - name: Resize
+      kwargs: 
+        height: ${transforms.image.train_resize_size} 
+        width: ${transforms.image.train_resize_size} 
+    - name: HorizontalFlip
+      kwargs:
+        p: 0.5
+    - name: RandomRotation
+      kwargs:
+        degrees: 45
+    - name: RandomCrop
+      kwargs:
+        height: ${transforms.image.train_resolution} 
+        width: ${transforms.image.train_resolution} 
+    - name: ColorJitter
+      kwargs:
+        brightness: 0.4
+        contrast: 0.4
+        saturation: 0.4
+        hue: 0.1 
+    - ${transforms.image.to_tensor}
+    - ${transforms.image.normalization}
+
+  test:
+    - name: Resize
+      kwargs: 
+        height: ${transforms.image.test_resolution} 
+        width: ${transforms.image.test_resolution} 
+    - name: CenterCrop
+      kwargs:
+        height: ${transforms.image.test_resolution} 
+        width: ${transforms.image.test_resolution} 
+    - ${transforms.image.to_tensor}
+    - ${transforms.image.normalization}
+
+text:
+  to_tensor:
+    name: ToTensor
+    kwargs: {}
+  normalization:
+    name: Normalization
+    kwargs: {}
+  tokenization:
+    name: NltkTokenization
+    kwargs: {}
+  vocabulary:
+    name: VocabularyEncoding
+    kwargs:
+      path: ${paths.transforms_dir}/coco_train_vocabulary.pkl
+
+  train:
+    - ${transforms.text.normalization}
+    - ${transforms.text.tokenization}
+    - ${transforms.text.vocabulary}
+    - ${transforms.text.to_tensor}
+
+  test:
+    - ${transforms.text.normalization}
+    - ${transforms.text.tokenization}
+    - ${transforms.text.vocabulary}
+    - ${transforms.text.to_tensor}
+

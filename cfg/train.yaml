@@ -1,0 +1,40 @@
+# @package _global_
+defaults:
+  - environment
+  - data: COCO
+  - transforms: baseline
+  - model: baseline
+  - optimizer: baseline
+  - scheduler: baseline
+  - trainer: baseline
+
+
+# Name of parent folder for artifacts, git tag
+experiment_name: vse_coco_test
+
+# Global random seed (null = random seed)
+seed: 0
+
+profiler: null
+# Skips training
+fast_dev_run: False
+# Resolve and display cfg then quit
+check_cfg: False
+# Displays a few augmented inputs then quit
+visualize_inputs: False
+# Runs pytorch-lightning lr tuner then quit
+tune: False
+
+data:
+  kwargs:
+    batch_size: 128
+    single_caption: True
+
+model:
+  kwargs:
+    single_positive: ${data.kwargs.single_caption}
+
+loss:
+  margin: 0.2
+  hardest_fraction: 0.0
+

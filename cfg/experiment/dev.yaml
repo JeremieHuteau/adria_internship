@@ -1,0 +1,30 @@
+# @package _global_
+defaults:
+  - override /model: small
+  - override /transforms: baseline
+
+experience_name: dev
+
+data:
+  kwargs:
+    batch_size: 64
+    single_caption: True
+
+transforms:
+  image:
+    train_resize_size: 36
+    train_resolution: 32
+    test_resolution: 36
+
+loss:
+  hardest_fraction: 1.0
+
+trainer:
+  kwargs:
+    max_epochs: 3
+  callbacks: 
+    - name: Unfreezing
+      kwargs:
+        milestones:
+          'image_encoder': 1
+        verbose: True

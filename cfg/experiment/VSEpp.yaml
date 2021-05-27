@@ -1,0 +1,63 @@
+# @package _global_
+
+# Replicates the VSE++ paper experiment:
+#   - Finetuned ResNet50 (152 in paper)
+
+defaults:
+  - override /transforms: baseline
+  - override /model: null
+  - override /optimizer: null
+  - override /scheduler: null
+  - override /trainer: null
+
+experiment_name: VSEpp_replication
+seed: 0
+
+data:
+  kwargs:
+    batch_size: 128
+    single_caption: True
+
+model:
+  name: VSE
+  kwargs:
+    embedding_size: 1024
+    image_encoder:
+      name: ResNet
+      kwargs: 
+        architecture_name: resnet50
+        pretrained: True
+    text_encoder:
+      name: GRU
+      kwargs:
+        vocabulary_size: ???
+        token_embedding_size: 300
+        num_layers: 1
+
+loss:
+  margin: 0.2
+  hardest_fraction: 0.0
+
+optimizer:
+  name: Adam
+  kwargs:
+    lr: 2e-4
+    betas: [0.9, 0.999]
+    weight_decay: 0
+
+scheduler:
+  name: MultiStepLR
+  kwargs:
+    milestones: [15]
+    gamma: 0.1
+  pl_kwargs:
+    interval: epoch
+
+trainer:
+  kwargs:
+    max_epochs: 50
+    gradient_clip_val: 2.0
+  callbacks: 
+    - name: Unfreezing
+      milestones:
+        'image_encoder': 30

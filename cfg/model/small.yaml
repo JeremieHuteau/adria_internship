@@ -1,0 +1,16 @@
+name: VSE
+
+kwargs:
+  embedding_size: 64
+
+  image_encoder:
+    name: BasicCNN
+    kwargs: {}
+
+  text_encoder:
+    name: GRU
+    kwargs:
+      vocabulary_size: ???
+      token_embedding_size: 32
+      num_layers: 1
+

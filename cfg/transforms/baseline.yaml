@@ -1,0 +1,25 @@
+defaults:
+  - base
+
+train:
+  - ${..text.normalization}
+  - ${..image.train_resize}
+
+  - ${..image.train_crop}
+  - name: HorizontalFlip
+    kwargs: {}
+
+  - ${..image.normalization}
+  - ${..image.to_tensor}
+  - ${..text.tokenization}
+  - ${..text.vocabulary}
+  - ${..text.to_tensor}
+
+test:
+  - ${..text.normalization}
+  - ${..image.test_resize}
+  - ${..image.normalization}
+  - ${..image.to_tensor}
+  - ${..text.tokenization}
+  - ${..text.vocabulary}
+  - ${..text.to_tensor}
