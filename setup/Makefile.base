@@ -24,11 +24,11 @@ LOGS_DIR = $(ARTIFACTS_DIR)/logs
 CHECKPOINTS_DIR = $(ARTIFACTS_DIR)/checkpoints
 TRANSFORMS_DIR = $(ARTIFACTS_DIR)/transforms
 
+CONDA_ROOT = $(shell conda info --base)
+
 ###############################################################################
 # CONSTANTS / DERIVED VARIABLES (should work as is)
 ###############################################################################
-CONDA_ROOT = $(shell conda info --base)
-
 DEFAULT_NUM_CPUS = \
 	$(shell grep 'cpu cores' /proc/cpuinfo | uniq | sed -e 's/.*: //')
 

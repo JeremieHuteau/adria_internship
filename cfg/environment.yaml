@@ -1,8 +1,0 @@
-paths:
-  data_dir: /home/arche/M2_stage/data
-  logs_dir: /home/arche/M2_stage/VSE/artifacts/logs
-  checkpoints_dir: /home/arche/M2_stage/VSE/artifacts/checkpoints
-  transforms_dir: /home/arche/M2_stage/VSE/artifacts/transforms
-num_cpus: 2
-num_gpus: 0
-not_interactive: False

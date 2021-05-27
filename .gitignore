@@ -1,0 +1,4 @@
+src/__pycache__/
+outputs/
+setup/Makefile
+cfg/environment.yaml
