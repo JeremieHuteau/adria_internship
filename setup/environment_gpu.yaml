@@ -12,6 +12,3 @@ dependencies:
   - nltk=3.5
   - matplotlib
   - pip
-  - pip:
-    - hydra-core --upgrade --pre
-    - albumentations

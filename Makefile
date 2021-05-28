@@ -66,6 +66,8 @@ $(DATASET_DIR)/preprocessed/annotations: $(DATASET_DIR)/raw/annotations
 .PHONY: setup
 setup: $(OUTPUT_DIRS) configuration
 	conda env create -n $(CONDA_ENV_NAME) -f $(CONDA_ENV_YAML)
+	$(PIP) install hydra-core --upgrade --pre
+	$(PIP) install albumentations
 	$(PYTHON) $(SETUP_DIR)/setup.py
 
 .PHONY: configuration
