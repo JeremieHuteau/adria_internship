@@ -59,5 +59,6 @@ trainer:
     gradient_clip_val: 2.0
   callbacks: 
     - name: Unfreezing
-      milestones:
-        'image_encoder': 30
+      kwargs:
+        milestones:
+          'image_encoder': 30
