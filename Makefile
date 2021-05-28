@@ -33,15 +33,22 @@ OUTPUT_DIRS = $(DATA_DIR) $(ARTIFACTS_DIR) \
 all: model
 
 .PHONY: model
+# Train model
 model: $(DATASET_DIR)/preprocessed $(TRANSFORMS_DIR)/$(DATASET)_train_vocabulary.pkl
 	$(PYTHON) $(SRC_DIR)/train_model.py \
 		$(HYDRA_ARGS)
 
+# Create vocabulary transform
 $(TRANSFORMS_DIR)/$(DATASET)_train_vocabulary.pkl: \
 		$(DATASET_DIR)/preprocessed/annotations
 	$(PYTHON) $(SRC_DIR)/create_vocabulary.py \
 		$(DATASET_DIR)/preprocessed/annotations/$($(DATASET)_TRAIN_ANNOTATIONS) \
 		$(TRANSFORMS_DIR)/$(DATASET)_train_vocabulary.pkl
+
+# Prepare data
+.PHONY: preprocessed
+preprocessed: $(DATASET_DIR)/preprocessed
+$(DATASET_DIR)/preprocessed: $(DATASET_DIR)/preprocessed/images $(DATASET_DIR)/preprocessed/annotations
 
 $(DATASET_DIR)/preprocessed/images: $(DATASET_DIR)/raw/images
 	mkdir -p $(DATASET_DIR)/preprocessed/images
@@ -50,6 +57,7 @@ $(DATASET_DIR)/preprocessed/images: $(DATASET_DIR)/raw/images
 		$(DATASET_DIR)/preprocessed/images \
 		--width 256 --height 256 \
 		--num-cpus $(NUM_CPUS)
+
 $(DATASET_DIR)/preprocessed/annotations: $(DATASET_DIR)/raw/annotations
 	cp -r $(DATASET_DIR)/raw/annotations $(DATASET_DIR)/preprocessed
 
