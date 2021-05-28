@@ -1,7 +1,7 @@
 channels:
   - defaults
-  - conda-forge
   - pytorch
+  - conda-forge
 dependencies:
   - cpuonly
   - python=3.7
