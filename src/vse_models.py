@@ -196,6 +196,8 @@ class VSE(pl.LightningModule):
             image_encoder_cfg, text_encoder_cfg,
             loss_cfg,
             optimizer_cfg, scheduler_cfg,
+            modality_normalization: bool = True, # normalize encoder features
+            joint_normalization: bool = True, # normalize projection features
             single_positive: bool = False,
             **kwargs):
         super().__init__()
@@ -214,6 +216,9 @@ class VSE(pl.LightningModule):
                 **text_encoder_cfg['kwargs'])
         self.text_projection = nn.Linear(
                 self.text_encoder.embedding_size, embedding_size)
+
+        self.modality_normalization = modality_normalization
+        self.joint_normalization = joint_normalization
 
         self.normalization = L2Normalization(dim=1)
 
@@ -243,15 +248,21 @@ class VSE(pl.LightningModule):
         if images is not None:
             with self.profiler.profile('image_forward'):
                 image_embeddings = self.image_encoder(images)
+                if self.modality_normalization:
+                    image_embeddings = self.normalization(image_embeddings)
                 image_embeddings = self.image_projection(image_embeddings)
-                image_embeddings = self.normalization(image_embeddings)
+                if self.joint_normalization:
+                    image_embeddings = self.normalization(image_embeddings)
 
         text_embeddings = None
         if texts is not None:
             with self.profiler.profile('text_forward'):
                 text_embeddings = self.text_encoder(texts, lengths)
+                if self.modality_normalization:
+                    text_embeddings = self.normalization(text_embeddings)
                 text_embeddings = self.text_projection(text_embeddings)
-                text_embeddings = self.normalization(text_embeddings)
+                if self.joint_normalization:
+                    text_embeddings = self.normalization(text_embeddings)
 
         return image_embeddings, text_embeddings
 
