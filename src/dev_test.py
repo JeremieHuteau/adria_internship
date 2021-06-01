@@ -3,6 +3,7 @@ import math
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 def TripletHingeSquare_forward(scores, margin, hardest_fraction):
     positive_scores = scores.diagonal().view(scores.size(0), 1)
@@ -168,101 +169,59 @@ def test_rnn_output():
     indices = indices.expand(x.size(0), 1, x.size(-1))
     x = torch.gather(x, 1, indices).squeeze(1)
 
-"""
-def test_albumentations():
-    import numpy as np
-    import transforms
-    import albumentations
+def test_batch_retrieval():
+    import torchmetrics
+    import evaluation
+    import retrieval_metrics
 
-    images = [
-        np.array([[1, 2], [3, 4]]),
-        np.array([[5, 6], [7, 8]]),
-    ]
-    texts = [
-        "cat left dog riGht upright",
-        "cat RIGHT dog lEfT leftist",
-    ]
+    metrics = torchmetrics.MetricCollection({
+        'R@1': retrieval_metrics.RecallAtK(1, matrix_preds=False)
+    })
 
-    class SetTransform(albumentations.BasicTransform):
-        @property
-        def targets(self):
-            return {
-                'images': self.apply_to_images,
-                'texts': self.apply_to_texts,
-            }
+    num_sources = 1024
+    embedding_size = 128
+    batch_size = 64
 
-        def apply_to_images(self, images, **params):
-            transformed_images = []
-            for image in images:
-                transformed_images.append(self.apply(image, **params))
-            return transformed_images
+    sources = torch.rand((num_sources, embedding_size))
+    targets = sources.clone()
 
-    {'1': [], '2': []}
-    for transform in composed_transform:
-        if len(transform.targets) > 1:
-            pass
-            # apply the same to all
+    num_non_matching = num_sources // 6
+    targets[:num_non_matching] = torch.rand((num_non_matching, embedding_size))
 
-        else:
-            pass
-            # apply different
+    sources = F.normalize(sources, p=2, dim=1)
+    targets = F.normalize(targets, p=2, dim=1)
 
-    def transform(images, texts, **params):
-        for transform in self.transforms:
-            if len(transform.targets & self.targets) > 1:
-                transform_params = ???
-                images = map(
-                        lambda img: transform(image=img, transform_params),
-                        images)
-                texts = map(
-                        lambda txt: transform(text=txt, transform_params),
-                        texts)
-            else:
-                targets = images if ??? else texts
-                targets = map(transform, targets)
+    score_fn = lambda a,b: torch.matmul(a, b.t())
 
-    text_normalization = transforms.TextNormalization(p=1)
-    flip = transforms.HorizontalFlip(p=1)
+    batches = []
+    current_offset = 0
+    while current_offset < num_sources:
+        batch_end_index = min(num_sources, current_offset+batch_size)
+        current_batch_size = batch_end_index - current_offset
 
-    augmentation = albumentations.Compose([text_normalization, flip])
+        batch_positive_pairs = torch.arange(current_batch_size).view(-1, 1).repeat(1, 2)
+        #batch_positive_pairs = torch.arange(current_batch_size).view(1, -1).repeat(2, 1)
+        batch = {
+            'sources': sources[current_offset:batch_end_index],
+            'targets': targets[current_offset:batch_end_index],
+            'positive_pairs': batch_positive_pairs
+        }
+        print(batch['sources'].size(), batch['targets'].size(), batch['positive_pairs'].size())
+        batches.append(batch)
 
-    data = {'image': image, 'text': text}
+        current_offset += batch_size
 
-    #print(augmentation(**data))
+    evaluation.batch_retrieval(
+        batches, 
+        source_key='sources', target_key='targets', 
+        swap_positive_pairs=False,
+        score_fn=score_fn, metrics=metrics)
 
-    data = text_normalization(**data)
-    print(data)
-    data = flip(**data)
-    print(data)
-"""
-
-def pretraining_draft():
-    # Step 0
-    data = precompute_part_dataset()
-    data.save()
-
-    # Step 1
-    data = PrecomputedPartXXXDataset()
-    model = Model()
-    model.part = Sequential()
-    fit(model, data)
-
-    # Step 2
-    data = XXXDataset()
-    model = Model.load_data_dict(checkpoint_data['data_dict'], strict=False)
-    fit(model, data)
-
-def part_loading(checkpoint):
-    data = torch.load(checkpoint)
-    print(data['state_dict'].keys())
-
-    class LolModule(nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.image_encoder = nn.Sequential
-
-    data['state_dict']
-
+    metric_values = {
+        metric_name: value.item()
+        for metric_name, value in metrics.compute().items()
+    }
+    print(metric_values)
 
 if __name__ == '__main__':
-    part_loading(sys.argv[1])
+    test_batch_retrieval()
