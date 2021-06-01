@@ -4,6 +4,7 @@ import operator
 import random
 from typing import Optional
 
+import numpy as np
 import torch
 import torchvision
 import albumentations as alb
@@ -11,6 +12,13 @@ import pytorch_lightning as pl
 
 import coco_captions_dataset
 import factories
+
+def worker_init_fn(worker_id):
+    """https://github.com/pytorch/pytorch/issues/5059"""
+    process_seed = torch.initial_seed()
+    base_seed = process_seed - worker_id
+    ss = np.random.SeedSequence([worker_id, base_seed])
+    np.random.seed(ss.generate_state(4))
 
 def make_transform(transform_cfgs, factory):
     individual_transforms = []
@@ -47,19 +55,6 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
                 transforms_cfg['test'],
                 factories.TransformFactory)
 
-        #self.image_train_transform = make_transform(
-        #        transforms_cfg['image']['train'],
-        #        factories.ImageTransformFactory)
-        #self.image_test_transform = make_transform(
-        #        transforms_cfg['image']['test'],
-        #        factories.ImageTransformFactory)
-        #self.text_train_transform = make_transform(
-        #        transforms_cfg['text']['train'],
-        #        factories.TextTransformFactory)
-        #self.text_test_transform = make_transform(
-        #        transforms_cfg['text']['test'],
-        #        factories.TextTransformFactory)
-
         if single_caption:
             self.text_train_select = lambda x: [random.choice(x)]
             self.text_test_select = lambda x: [x[0]]
@@ -77,16 +72,12 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
                     os.path.join(self.root_dir, self.images_dir), 
                     os.path.join(self.root_dir, self.train_annotations_file),
                     transform = self.train_transform,
-                    #image_transform = self.image_train_transform,
-                    #caption_transform = self.text_train_transform,
                     caption_select = self.text_train_select)
 
             self.val = coco_captions_dataset.CocoCaptions(
                     os.path.join(self.root_dir, self.images_dir), 
                     os.path.join(self.root_dir, self.val_annotations_file),
                     transform = self.test_transform,
-                    #image_transform = self.image_test_transform,
-                    #caption_transform = self.text_test_transform,
                     caption_select = self.text_test_select)
 
         if stage == 'test' or stage is None:
@@ -94,8 +85,6 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
                     os.path.join(self.root_dir, self.images_dir), 
                     os.path.join(self.root_dir, self.test_annotations_file),
                     transform = self.test_transform,
-                    #image_transform = self.image_test_transform,
-                    #caption_transform = self.text_test_transform,
                     caption_select = self.text_test_select)
 
     def _collate_fn(self, batch):
@@ -192,12 +181,14 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
                 batch_size=self.batch_size, shuffle=True,
                 num_workers=self.num_workers, pin_memory=self.pin_memory,
                 collate_fn=self._collate_fn,
-                drop_last=True)
+                drop_last=True,
+                worker_init_fn=worker_init_fn)
     def _shared_test_dataloader(self, dataset):
         return torch.utils.data.DataLoader(dataset,
                 batch_size=self.batch_size,
                 num_workers=self.num_workers, pin_memory=self.pin_memory,
-                collate_fn=self._collate_fn,)
+                collate_fn=self._collate_fn,
+                worker_init_fn=worker_init_fn)
     def val_dataloader(self):
         return self._shared_test_dataloader(self.val)
     def test_dataloader(self):
