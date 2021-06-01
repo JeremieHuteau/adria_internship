@@ -21,10 +21,14 @@ loss:
 
 trainer:
   kwargs:
-    max_epochs: 3
+    max_epochs: 10
   callbacks: 
     - name: Unfreezing
       kwargs:
         milestones:
           'image_encoder': 1
         verbose: True
+    - name: HardestFractionDecay
+      kwargs:
+        total_steps: 1000
+        min_fraction: 0.5

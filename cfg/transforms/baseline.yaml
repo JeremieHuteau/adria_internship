@@ -18,6 +18,7 @@ train:
 test:
   - ${..text.normalization}
   - ${..image.test_resize}
+  - ${..image.test_crop}
   - ${..image.normalization}
   - ${..image.to_tensor}
   - ${..text.tokenization}

@@ -36,7 +36,7 @@ model:
 
 loss:
   margin: 0.2
-  hardest_fraction: 0.0
+  hardest_fraction: 1.0
 
 optimizer:
   name: Adam
@@ -55,10 +55,13 @@ scheduler:
 
 trainer:
   kwargs:
-    max_epochs: 50
+    max_epochs: 30
     gradient_clip_val: 2.0
   callbacks: 
     - name: Unfreezing
       kwargs:
         milestones:
-          'image_encoder': 30
+          'image_encoder': 1e9
+    - name: HardestFractionDecay
+      kwargs:
+        total_steps: 4500
