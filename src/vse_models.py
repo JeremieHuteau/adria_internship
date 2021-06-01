@@ -10,6 +10,7 @@ import torchmetrics
 
 import factories
 import vision_modules as vnn
+import evaluation
 import retrieval_metrics
 
 class BasicCnnEncoder(nn.Module):
@@ -231,12 +232,21 @@ class VSE(pl.LightningModule):
         
         k = 1
         self.r_at_k_str = f'R@{k}'
-        metrics = torchmetrics.MetricCollection({
+        batch_metrics = torchmetrics.MetricCollection({
                 self.r_at_k_str: retrieval_metrics.CrossmodalRecallAtK(
                     k, k, matrix_preds=single_positive)
                 })
-        self.train_metrics = metrics.clone(prefix="train/")
-        self.validation_metrics = metrics.clone(prefix="val/")
+        self.train_metrics = batch_metrics.clone(prefix="train/")
+        self.validation_batch_metrics = batch_metrics.clone(prefix="val/")
+
+        image_metrics = torchmetrics.MetricCollection({
+                f'I2T_{self.r_at_k_str}': retrieval_metrics.RecallAtK(k),
+                })
+        text_metrics = torchmetrics.MetricCollection({
+                f'T2I_{self.r_at_k_str}': retrieval_metrics.RecallAtK(k),
+                })
+        self.validation_image_metrics = image_metrics.clone(prefix="val/")
+        self.validation_text_metrics = text_metrics.clone(prefix="val/")
 
         self._optimizer_cfg = optimizer_cfg
         self._scheduler_cfg = scheduler_cfg
@@ -266,7 +276,7 @@ class VSE(pl.LightningModule):
 
         return image_embeddings, text_embeddings
 
-    def _shared_step(self, batch, batch_idx, metrics):
+    def _shared_step(self, batch, batch_idx, metrics=None):
         with self.profiler.profile('shared_step'):
             images = batch['images']
             texts = batch['texts']
@@ -285,7 +295,10 @@ class VSE(pl.LightningModule):
             with self.profiler.profile('loss'):
                 loss = self.loss(scores, targets, indices_images, indices_texts)
             with self.profiler.profile('recall'):
-                metric_values = metrics(scores, targets, indices_images, indices_texts)
+                metric_values = {}
+                if metrics is not None:
+                    metric_values = metrics(scores, targets, indices_images, indices_texts)
+
 
         return loss, metric_values
 
@@ -296,21 +309,63 @@ class VSE(pl.LightningModule):
         self.log('train/loss', loss)
         self.log_dict(metric_values)
 
-        return {
-            'loss': loss, 
-            **metric_values
-        }
-    def validation_step(self, batch, batch_idx):
-        loss, metric_values = self._shared_step(
-                batch, batch_idx, self.validation_metrics)
-        
-        self.log('val/loss', loss, on_epoch=True)
-        self.log_dict(metric_values, on_epoch=True)
+        self.log('loss.hardest_fraction', self.loss.hardest_fraction)
 
         return {
             'loss': loss, 
             **metric_values
         }
+
+    def validation_step(self, batch, batch_idx):
+        images = batch['images']
+        texts = batch['texts']
+        lengths = batch['lengths']
+
+        images, texts = self(images, texts, lengths)
+        scores = self.similarity(images, texts)
+
+        positive_pairs = batch['positive_pairs']
+        targets, indices_images, indices_texts = \
+                retrieval_metrics.positive_sparse2dense(
+                    positive_pairs, [scores.size(0), scores.size(1)])
+
+        loss = self.loss(scores, targets, indices_images, indices_texts)
+        batch_metric_values = self.validation_batch_metrics(
+                scores, targets, indices_images, indices_texts)
+        self.log('val/loss', loss, on_epoch=True)
+        self.log_dict(batch_metric_values, on_epoch=True)
+
+        embedded_batch = {
+            'images': images,
+            'texts': texts,
+            'positive_pairs': positive_pairs,
+        }
+
+        return embedded_batch
+
+    def validation_epoch_end(self, validation_step_outputs):
+        embedded_batches = validation_step_outputs
+
+        i2t_metric_values = evaluation.batch_retrieval(
+            embedded_batches,
+            source_key='images', target_key='texts', 
+            swap_positive_pairs=False,
+            score_fn=self.similarity, 
+            metrics=self.validation_image_metrics
+        )
+        t2i_metric_values = evaluation.batch_retrieval(
+            embedded_batches,
+            source_key='texts', target_key='images', 
+            swap_positive_pairs=True,
+            score_fn=self.similarity, 
+            metrics=self.validation_text_metrics
+        )
+
+        self.log_dict({
+                **i2t_metric_values,
+                **t2i_metric_values}, 
+            on_epoch=True)
+
 
     def configure_optimizers(self):
         optimizer = factories.OptimizerFactory.create(
