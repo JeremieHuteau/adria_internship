@@ -361,11 +361,8 @@ class VSE(pl.LightningModule):
             metrics=self.validation_text_metrics
         )
 
-        self.log_dict({
-                **i2t_metric_values,
-                **t2i_metric_values}, 
-            on_epoch=True)
-
+        self.log_dict(i2t_metric_values, on_epoch=True)
+        self.log_dict(t2i_metric_values, on_epoch=True)
 
     def configure_optimizers(self):
         optimizer = factories.OptimizerFactory.create(
