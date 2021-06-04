@@ -43,6 +43,9 @@ text:
   tokenization:
     name: NltkTokenization
     kwargs: {}
+  sentence_padding:
+    name: StartEndPadding
+    kwargs: {}
   vocabulary:
     name: VocabularyEncoding
     kwargs:

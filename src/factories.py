@@ -85,6 +85,7 @@ class TextTransformFactory(Factory):
     PRODUCTS: Dict[str, Callable] = {
             'Normalization': transforms.TextNormalization,
             'NltkTokenization': transforms.NltkTokenization,
+            'StartEndPadding': transforms.StartEndPadding,
             'VocabularyEncoding': lambda path: transforms.VocabularyEncoding(
                 pickle.load(open(path, 'rb'))),
             'IndicesToTensor': transforms.IndicesToTensor,
@@ -104,6 +105,7 @@ class TransformFactory(Factory):
 
             'TextNormalization': TextTransformFactory['Normalization'],
             'NltkTokenization': TextTransformFactory['NltkTokenization'],
+            'StartEndPadding': TextTransformFactory['StartEndPadding'],
             'VocabularyEncoding': TextTransformFactory['VocabularyEncoding'],
             'IndicesToTensor': TextTransformFactory['IndicesToTensor'],
     }

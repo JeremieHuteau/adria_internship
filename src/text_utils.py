@@ -25,29 +25,34 @@ class Vocabulary(object):
     def __init__(self, 
             unknown_token_idx: int = special_tokens[unknown_token]):
         self.unknown_token_idx = unknown_token_idx
-        self.token2idx = {}
-        self.idx2token = {}
-        self.idx = 0
+        self._token2idx = {}
+        self._idx2token = {}
+        self._idx = 0
         pass
 
     def add_token(self, token: int) -> None:
-        self.token2idx[token] = self.idx
-        self.idx2token[self.idx] = token
-        self.idx += 1
+        self._token2idx[token] = self._idx
+        self._idx2token[self._idx] = token
+        self._idx += 1
 
     def doc2idx(self, doc: List[str]) -> List[int]:
         return [self[token] 
-            if token in self.token2idx else self.unknown_token_idx 
+            if token in self._token2idx else self.unknown_token_idx 
             for token in doc]
+
+    def idx2token(self, idx: int) -> str:
+        return self._idx2token[idx]
+    def idx2doc(self, idx: List[int]) -> List[str]:
+        return [self.idx2token(i) for i in idx]
 
     def __call__(self, doc: List[str]) -> List[int]:
         return self.doc2idx(doc)
 
     def __getitem__(self, token: str) -> int:
-        return self.token2idx[token]
+        return self._token2idx[token]
 
     def __len__(self) -> int:
-        return self.idx
+        return self._idx
 
 class NltkTokenization(object):
     def __call__(self, sentence: str) -> List[str]:

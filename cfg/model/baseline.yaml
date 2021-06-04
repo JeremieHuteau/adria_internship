@@ -1,13 +1,13 @@
 defaults:
-  - vision@kwargs.image_encoder: resnet50
-  - text@kwargs.text_encoder: gru
+  - vision@image_encoder: resnet50
+  - text@text_encoder: gru
 
 name: VSE
 
 kwargs:
   embedding_size: 1024
 
-  image_encoder:
-    kwargs:
-      pretrained: True
+image_encoder:
+  kwargs:
+    pretrained: True
 

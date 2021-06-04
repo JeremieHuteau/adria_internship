@@ -194,13 +194,19 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return self._shared_test_dataloader(self.test)
 
-    def visualize_batch(self, batch, normalization_parameters, num_display=2):
+    def visualize_batch(self, batch, normalization_parameters, vocabulary, num_display=2):
         import matplotlib.pyplot as plt
         import torchvision
 
         images = batch['images'][:num_display]
         positive_pairs = batch['positive_pairs']
-        captions = list(map(lambda d: d['caption'], batch['annotations_data']))
+        captions = batch['texts']
+        #captions = list(map(lambda d: d['caption'], batch['annotations_data']))
+
+        print(positive_pairs)
+        print(captions)
+        raw_captions = list(map(lambda d: d['caption'], batch['annotations_data']))
+        print(*enumerate(raw_captions), sep='\n')
 
         image_std = torch.tensor(normalization_parameters['std']).view(-1, 1, 1)
         image_mean = torch.tensor(normalization_parameters['mean']).view(-1, 1, 1)
@@ -218,8 +224,14 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
             image = image * image_std + image_mean
             image = torchvision.transforms.ToPILImage()(image)
 
+            texts = map(lambda t: t.tolist(), images_captions[i])
+            texts = map(lambda t: vocabulary.idx2doc(t), texts)
+            texts = map(lambda t: ' '.join(t), texts)
+            texts = '\n'.join(texts)
+
+
             fig, axes = plt.subplots()
-            axes.set(xlabel = '\n'.join(images_captions[i]))
+            axes.set(xlabel = texts)
             plt.imshow(image)
         plt.show()
 

@@ -12,6 +12,7 @@ train:
   - ${..image.normalization}
   - ${..image.to_tensor}
   - ${..text.tokenization}
+  - ${..text.sentence_padding}
   - ${..text.vocabulary}
   - ${..text.to_tensor}
 
@@ -22,5 +23,6 @@ test:
   - ${..image.normalization}
   - ${..image.to_tensor}
   - ${..text.tokenization}
+  - ${..text.sentence_padding}
   - ${..text.vocabulary}
   - ${..text.to_tensor}

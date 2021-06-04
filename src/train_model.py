@@ -1,6 +1,7 @@
 import os
 import pickle
 
+import yaml
 import omegaconf
 import hydra
 import pytorch_lightning as pl
@@ -25,7 +26,7 @@ def main(cfg):
 
     vocabulary = pickle.load(open(
         cfg['transforms']['text']['vocabulary']['kwargs']['path'], 'rb'))
-    cfg['model']['kwargs']['text_encoder']['kwargs']['vocabulary_size'] = \
+    cfg['model']['text_encoder']['kwargs']['vocabulary_size'] = \
             len(vocabulary)
     del vocabulary
 
@@ -42,10 +43,14 @@ def main(cfg):
 
     if not cfg['not_interactive']:
         if cfg['visualize_inputs']:
+            normalization_parameters = cfg['transforms']['image']['normalization']['kwargs']
+            vocabulary = pickle.load(open(
+                cfg['transforms']['text']['vocabulary']['kwargs']['path'], 'rb'))
             batch = next(iter(datamodule.train_dataloader()))
             datamodule.visualize_batch(batch,
-            cfg['transforms']['image']['normalization']['kwargs'],
-            4)
+                normalization_parameters=normalization_parameters,
+                vocabulary=vocabulary,
+                num_display=4)
             return
 
     experiment_checkpoints_dir = os.path.join(
@@ -75,12 +80,13 @@ def main(cfg):
         
     model = factories.VSEModelFactory.create(
             cfg['model']['name'],
-            embedding_size=cfg['model']['kwargs']['embedding_size'],
-            image_encoder_cfg=cfg['model']['kwargs']['image_encoder'],
-            text_encoder_cfg=cfg['model']['kwargs']['text_encoder'],
+            image_encoder_cfg=cfg['model']['image_encoder'],
+            text_encoder_cfg=cfg['model']['text_encoder'],
             loss_cfg=cfg['loss'],
             optimizer_cfg=cfg['optimizer'], 
-            scheduler_cfg=cfg['scheduler'])
+            scheduler_cfg=cfg['scheduler'],
+            **cfg['model']['kwargs'],
+            )
 
     example_input_array = next(iter(datamodule.val_dataloader()))
     model.example_input_array = example_input_array
@@ -107,7 +113,7 @@ def main(cfg):
             callbacks=callbacks,
             gpus=cfg['num_gpus'], auto_select_gpus=cfg['num_gpus']>0, 
             progress_bar_refresh_rate=0 if cfg['not_interactive'] else 1,
-            weights_summary='top' if cfg['not_interactive'] else 'full',
+            weights_summary='full',
             fast_dev_run=cfg['fast_dev_run'],
             profiler=profiler,
     )
@@ -133,6 +139,13 @@ def main(cfg):
         print(f"Loading best model from {best_model_path}")
         model = factories.VSEModelFactory.PRODUCTS[cfg['model']['name']]\
                 .load_from_checkpoint(best_model_path)
+
+        cfg['best_model_path'] = best_model_path
+        cfg_dump_path = os.path.join(
+                cfg['paths']['logs_dir'], cfg['experiment_name'], 
+                f'version_{experiment_version}', 'cfg.yaml')
+        yaml.dump(cfg, open(cfg_dump_path, 'w'))
+        
 
     evaluation_device = "cpu" if cfg['num_gpus'] == 0 else "cuda:0"
     results = evaluation.evaluate(model, datamodule.val_dataloader(),

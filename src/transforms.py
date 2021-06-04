@@ -6,6 +6,8 @@ import cv2
 import nltk
 import torch
 
+import text_utils
+
 class TextOnlyTransform(albumentations.BasicTransform):
     def __init__(self, always_apply=True, p=1.0):
         super().__init__(always_apply, p)
@@ -38,6 +40,10 @@ class TextNormalization(TextOnlyTransform):
 class NltkTokenization(TextOnlyTransform):
     def apply_to_text(self, text: str, **params) -> List[str]:
         return nltk.word_tokenize(text)
+
+class StartEndPadding(TextOnlyTransform):
+    def apply_to_text(self, text: List[str], **params) -> List[str]:
+        return [text_utils.start_token] + text + [text_utils.end_token]
 
 class VocabularyEncoding(TextOnlyTransform):
     def __init__(self, encoder):
