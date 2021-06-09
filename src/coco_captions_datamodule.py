@@ -2,7 +2,7 @@ import os
 import itertools
 import operator
 import random
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 import torch
@@ -55,13 +55,19 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
                 transforms_cfg['test'],
                 factories.TransformFactory)
 
+
         if single_caption:
-            self.text_train_select = lambda x: [random.choice(x)]
-            self.text_test_select = lambda x: [x[0]]
+            self.text_train_select = self._select_random
+            self.text_test_select = self._select_first
         else:
             raise ValueError("Multiple captions not supported due to"
                     " augmentation pipeline.")
             self.text_train_select = self.text_test_select = lambda x: x
+
+    def _select_first(self, x: List) -> List:
+        return [x[0]]
+    def _select_random(self, x: List) -> List:
+        return [random.choice(x)]
 
     def prepare_data(self):
         pass

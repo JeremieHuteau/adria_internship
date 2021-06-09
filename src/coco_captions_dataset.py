@@ -11,6 +11,8 @@ def load_annotations_file(path):
         annotations = json.load(f)
     return annotations
 
+def identity(x): return x
+
 class CocoCaptions(torch.utils.data.Dataset):
     def __init__(self, images_dir, annotations_file, 
             transform=None,
@@ -26,10 +28,10 @@ class CocoCaptions(torch.utils.data.Dataset):
         self.transform = transform
 
         if image_select is None:
-            image_select = lambda x: x
+            image_select = identity
         self.image_select = image_select
         if caption_select is None:
-            caption_select = lambda x: x
+            caption_select = identity
         self.caption_select = caption_select
 
         self.data = load_annotations_file(annotations_file)
