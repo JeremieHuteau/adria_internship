@@ -39,6 +39,8 @@ model: $(DATASET_DIR)/preprocessed $(TRANSFORMS_DIR)/$(DATASET)_train_vocabulary
 		$(HYDRA_ARGS)
 
 # Create vocabulary transform
+.PHONY: vocabulary
+vocabulary: $(TRANSFORMS_DIR)/$(DATASET)_train_vocabulary.pkl
 $(TRANSFORMS_DIR)/$(DATASET)_train_vocabulary.pkl: \
 		$(DATASET_DIR)/preprocessed/annotations
 	$(PYTHON) $(SRC_DIR)/create_vocabulary.py \
@@ -50,6 +52,8 @@ $(TRANSFORMS_DIR)/$(DATASET)_train_vocabulary.pkl: \
 preprocessed: $(DATASET_DIR)/preprocessed
 $(DATASET_DIR)/preprocessed: $(DATASET_DIR)/preprocessed/images $(DATASET_DIR)/preprocessed/annotations
 
+.PHONY: preprocessed_images
+preprocessed_images: $(DATASET_DIR)/preprocessed/images
 $(DATASET_DIR)/preprocessed/images: $(DATASET_DIR)/raw/images
 	mkdir -p $(DATASET_DIR)/preprocessed/images
 	$(PYTHON) $(SRC_DIR)/image_preprocessing.py \
@@ -58,6 +62,8 @@ $(DATASET_DIR)/preprocessed/images: $(DATASET_DIR)/raw/images
 		--width 256 --height 256 \
 		--num-cpus $(NUM_CPUS)
 
+.PHONY: preprocessed_captions
+preprocessed_captions: $(DATASET_DIR)/preprocessed/annotations
 $(DATASET_DIR)/preprocessed/annotations: $(DATASET_DIR)/raw/annotations
 	cp -r $(DATASET_DIR)/raw/annotations $(DATASET_DIR)/preprocessed
 
