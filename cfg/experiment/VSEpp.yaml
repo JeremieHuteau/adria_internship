@@ -25,7 +25,7 @@ model:
   image_encoder:
     name: ResNet
     kwargs: 
-      architecture_name: resnet50
+      architecture_name: resnet34
       pretrained: True
   text_encoder:
     name: GRU
@@ -55,13 +55,13 @@ scheduler:
 
 trainer:
   kwargs:
-    max_epochs: 30
+    max_epochs: 45
     gradient_clip_val: 2.0
   callbacks: 
     - name: Unfreezing
       kwargs:
         milestones:
-          'image_encoder': 1e9
+          'image_encoder': 30
     - name: HardestFractionDecay
       kwargs:
-        total_steps: 4500
+        total_steps: 2000

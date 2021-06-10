@@ -21,7 +21,7 @@ loss:
 
 trainer:
   kwargs:
-    max_epochs: 10
+    max_epochs: 5
   callbacks: 
     - name: Unfreezing
       kwargs:
@@ -30,5 +30,5 @@ trainer:
         verbose: True
     - name: HardestFractionDecay
       kwargs:
-        total_steps: 1000
-        min_fraction: 0.1
+        total_steps: 100
+        min_fraction: 0.5
