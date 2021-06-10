@@ -137,10 +137,11 @@ class SchedulerFactory(Factory):
             'ReduceLROnPlateau': torch.optim.lr_scheduler.ReduceLROnPlateau,
     }
 
+import triplet_margin_loss
 import vse_models
 class CallbackFactory(Factory):
     PRODUCTS: Dict[str, Callable] = {
-            'HardestFractionDecay': vse_models.HardestFractionDecay,
+            'HardestFractionDecay': triplet_margin_loss.HardestFractionDecay,
             'Unfreezing': vse_models.Unfreezing,
     }
 
