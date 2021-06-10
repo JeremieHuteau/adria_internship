@@ -37,7 +37,7 @@ def get_groups_indices(indices):
     return groups
 
 def positive_sparse2dense(positive_pairs, num_queries: List[int]):
-        targets = torch.zeros(*num_queries)
+        targets = torch.zeros(*num_queries, device=positive_pairs.device)
         targets[positive_pairs[:,0], positive_pairs[:,1]] = 1
         targets = targets
 
