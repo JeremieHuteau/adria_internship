@@ -89,7 +89,7 @@ def batch_retrieval(batches, source_key, target_key, swap_positive_pairs,
         batch_positive_pairs = batch['positive_pairs'].clone()
         if swap_positive_pairs:
             swapped_positive_pairs = torch.zeros(batch_positive_pairs.size(),
-                dtype=torch.long, device=positive_pairs.device)
+                dtype=torch.long, device=batch_positive_pairs.device)
             swapped_positive_pairs[:,0] = batch_positive_pairs[:,1]
             swapped_positive_pairs[:,1] = batch_positive_pairs[:,0]
             batch_positive_pairs = swapped_positive_pairs
