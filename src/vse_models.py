@@ -257,15 +257,6 @@ class VSE(pl.LightningModule):
         }
 
     def _shared_step_end(self, step_outputs, metrics=None):
-        ## step_outputs: List[Dict]
-        #images = torch.cat(
-        #    [oup['images'] for oup in step_outputs], dim=0)
-        #texts = torch.cat(
-        #    [oup['texts'] for oup in step_outputs], dim=0)
-        ## TODO: offset the indices
-        #positive_pairs = torch.cat(
-        #    [oup['positive_pairs'] for oup in step_outputs], dim=0)
-
         images = step_outputs['images']
         texts = step_outputs['texts']
         positive_pairs = step_outputs['positive_pairs']

@@ -112,6 +112,7 @@ def main(cfg):
             logger=logger,
             callbacks=callbacks,
             gpus=cfg['num_gpus'], auto_select_gpus=cfg['num_gpus']>0, 
+            accelerator='dp' if cfg['num_gpus'] > 1 else None,
             progress_bar_refresh_rate=0 if cfg['not_interactive'] else 1,
             weights_summary='full',
             fast_dev_run=cfg['fast_dev_run'],

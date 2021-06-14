@@ -25,7 +25,7 @@ model:
   image_encoder:
     name: ResNet
     kwargs: 
-      architecture_name: resnet34
+      architecture_name: resnet101
       pretrained: True
   text_encoder:
     name: GRU
