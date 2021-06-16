@@ -70,6 +70,7 @@ class ImageTransformFactory(Factory):
             'Resize': alb.Resize,
             'CenterCrop': alb.CenterCrop,
             'RandomCrop': alb.RandomCrop,
+            'RandomResizedCrop': alb.RandomResizedCrop,
 
             'HorizontalFlip': transforms.HorizontalFlip,
             'RandomRotation': _RandomRotation,
@@ -97,6 +98,7 @@ class TransformFactory(Factory):
             'Resize': ImageTransformFactory['Resize'],
             'CenterCrop': ImageTransformFactory['CenterCrop'],
             'RandomCrop': ImageTransformFactory['RandomCrop'],
+            'RandomResizedCrop': ImageTransformFactory['RandomResizedCrop'],
             'HorizontalFlip': ImageTransformFactory['HorizontalFlip'],
             'RandomRotation': ImageTransformFactory['RandomRotation'],
             'ColorJitter': ImageTransformFactory['ColorJitter'],

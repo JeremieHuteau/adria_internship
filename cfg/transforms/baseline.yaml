@@ -3,9 +3,13 @@ defaults:
 
 train:
   - ${..text.normalization}
-  - ${..image.train_resize}
 
-  - ${..image.train_crop}
+  - name: RandomResizedCrop
+    kwargs: 
+      height: ${....image.train_resolution}
+      width: ${....image.train_resolution}
+      scale: [0.33, 1.0]
+
   - name: HorizontalFlip
     kwargs: {}
 
