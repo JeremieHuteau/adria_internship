@@ -34,7 +34,7 @@ def main(training_cfg):
     datamodule.setup('fit')
     dataloader = datamodule.val_dataloader()
 
-    device = "cpu" if cfg['num_gpus'] == 0 else "cuda:0"
+    device = "cpu" if training_cfg['num_gpus'] == 0 else "cuda:0"
 
     embedding_batches = evaluation.generate_embeddings(
             model, dataloader, device=device)
