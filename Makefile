@@ -39,13 +39,13 @@ embeddings:
 	$(PYTHON) $(SRC_DIR)/save_embeddings.py \
 		-cd $(LOGS_DIR)/$(RUN_DIR) -cn cfg.yaml \
 		+embeddings_dump_path=$(LOGS_DIR)/$(RUN_DIR)/embeddings.pkl \
-		$(HYDRA_ARGS)
+		$(HYDRA_ALL_ARGS)
 
 .PHONY: model
 # Train model
 model: $(DATASET_DIR)/preprocessed $(TRANSFORMS_DIR)/$(DATASET)_train_vocabulary.pkl
 	$(PYTHON) $(SRC_DIR)/train_model.py \
-		$(HYDRA_ARGS)
+		$(HYDRA_ALL_ARGS)
 
 # Create vocabulary transform
 .PHONY: vocabulary
