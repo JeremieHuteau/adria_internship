@@ -5,28 +5,8 @@ import torchmetrics
 import retrieval_metrics
 
 def evaluate(model, dataloader, device="cpu"):
-    model = model.to(device)
-    model.eval()
     with torch.no_grad():
-        embedded_batches = []
-
-        for batch_idx, batch in enumerate(dataloader):
-            images = batch['images']
-            texts = batch['texts']
-            lengths = batch['lengths']
-            image_positive_pairs = batch['positive_pairs']
-
-            image_embeddings_batch, text_embeddings_batch = model(
-                    images.to(device), texts.to(device), lengths.to(device))
-
-            image_embeddings_batch = image_embeddings_batch.cpu()
-            text_embeddings_batch = text_embeddings_batch.cpu()
-
-            embedded_batches.append({
-                'images': image_embeddings_batch,
-                'texts': text_embeddings_batch,
-                'positive_pairs': batch['positive_pairs'].cpu(),
-            })
+        embedded_batches = generate_embeddings(model, dataloader, device)
 
         # Put the model on the cpu in case its similarity function uses 
         # learned tensors.
@@ -73,6 +53,30 @@ def evaluate(model, dataloader, device="cpu"):
             }
     return results
 
+def generate_embeddings(model, dataloader, device='cpu'):
+    model = model.to(device)
+    model.eval()
+    with torch.no_grad():
+        embedded_batches = []
+
+        for batch_idx, batch in enumerate(dataloader):
+            images = batch['images']
+            texts = batch['texts']
+            lengths = batch['lengths']
+
+            image_embeddings, text_embeddings = model(
+                    images.to(device), texts.to(device), lengths.to(device))
+
+            embedded_batches.append({
+                'images': image_embeddings.cpu(),
+                'texts': text_embeddings.cpu(),
+                'positive_pairs': batch['positive_pairs'].cpu(),
+                'images_data': batch['images_data'],
+                'annotations_data': batch['annotations_data'],
+            })
+
+    return embedded_batches
+
 def batch_retrieval(batches, source_key, target_key, swap_positive_pairs,
         score_fn, metrics):
 
@@ -105,6 +109,4 @@ def batch_retrieval(batches, source_key, target_key, swap_positive_pairs,
         metrics.update(batch_scores, batch_labels, batch_indices)
 
     return metrics
-    metric_values = [metric.compute().item() for metric in metrics]
-    return metric_values
 

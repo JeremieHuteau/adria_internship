@@ -11,7 +11,9 @@ NUM_GPUS = $(DEFAULT_NUM_GPUS)
 DATASET = COCO
 
 # Arguments to be passed to the training scripts. Uses hydra syntax.
-override HYDRA_ARGS += num_cpus=$(NUM_CPUS) num_gpus=$(NUM_GPUS) data=$(DATASET)
+#override HYDRA_ARGS += 
+HYDRA_ALL_ARGS = num_cpus=$(NUM_CPUS) num_gpus=$(NUM_GPUS) data=$(DATASET) \
+		 $(HYDRA_ARGS)
 
 ###############################################################################
 # CONSTANT/DERIVED VARIABLES
@@ -31,6 +33,13 @@ OUTPUT_DIRS = $(DATA_DIR) $(ARTIFACTS_DIR) \
 
 .PHONY: all
 all: model
+
+.PHONY: embeddings
+embeddings:
+	$(PYTHON) $(SRC_DIR)/save_embeddings.py \
+		-cd $(LOGS_DIR)/$(RUN_DIR) -cn cfg.yaml \
+		+embeddings_dump_path=$(LOGS_DIR)/$(RUN_DIR)/embeddings.pkl \
+		$(HYDRA_ARGS)
 
 .PHONY: model
 # Train model

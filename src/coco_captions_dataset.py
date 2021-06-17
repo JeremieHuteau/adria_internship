@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 
 import cv2
+import numpy as np
 import torch
 from PIL import Image
 
@@ -23,8 +24,6 @@ class CocoCaptions(torch.utils.data.Dataset):
         self.images_dir = images_dir
         self.annotations_file = annotations_file
 
-        #self.image_transform = image_transform
-        #self.caption_transform = caption_transform
         self.transform = transform
 
         if image_select is None:
@@ -45,8 +44,14 @@ class CocoCaptions(torch.utils.data.Dataset):
     def _create_index(self):
         for ann in self.data['annotations']:
             self.img2ann[ann['image_id']].append(ann)
+        for image_id, annotation_list in self.img2ann.items():
+            if len(annotation_list) < 5:
+                self.img2ann.pop(image_id)
+                continue
+            self.img2ann[image_id] = annotation_list[:5]
         for img in self.data['images']:
-            self.images[img['id']] = img
+            if img['id'] in self.img2ann:
+                self.images[img['id']] = img
 
     def __getitem__(self, idx):
         image_id = self.img_ids[idx]
@@ -68,14 +73,21 @@ class CocoCaptions(torch.utils.data.Dataset):
         captions = [ann_data['caption'] for ann_data in annotations_data]
 
         if self.transform is not None:
-            data = self.transform(image=images[0], text=captions[0])
-            images = [data['image']]
-            captions = [data['text']]
+            #data = self.transform(image=images[0], text=captions[0])
+            #images = [data['image']]
+            #captions = [data['text']]
 
-        #if self.image_transform is not None:
-        #    images = [self.image_transform(image) for image in images]
-        #if self.caption_transform is not None:
-        #    captions = [self.caption_transform(caption) for caption in captions]
+            transformed_captions = []
+            for caption in captions:
+                data = self.transform(text=caption, image=images[0])
+                transformed_captions.append(data['text'])
+            captions = transformed_captions
+
+            transformed_images = []
+            for image in images:
+                data = self.transform(image=image)
+                transformed_images.append(data['image'])
+            images = transformed_images
 
         return {
             'images': images,
@@ -86,7 +98,6 @@ class CocoCaptions(torch.utils.data.Dataset):
             'images_data': images_data,
             'annotations_data': annotations_data,
         }
-
 
     def __len__(self):
         return len(self.img_ids)

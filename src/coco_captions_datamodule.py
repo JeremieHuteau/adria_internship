@@ -55,12 +55,11 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
                 transforms_cfg['test'],
                 factories.TransformFactory)
 
-
         if single_caption:
             self.text_train_select = self._select_random
             self.text_test_select = self._select_first
         else:
-            raise ValueError("Multiple captions not supported due to"
+            print("Multiple captions not supported due to"
                     " augmentation pipeline.")
             self.text_train_select = self.text_test_select = lambda x: x
 
