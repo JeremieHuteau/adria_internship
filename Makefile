@@ -12,7 +12,7 @@ DATASET = COCO
 
 # Arguments to be passed to the training scripts. Uses hydra syntax.
 #override HYDRA_ARGS += 
-HYDRA_ALL_ARGS = num_cpus=$(NUM_CPUS) num_gpus=$(NUM_GPUS) data=$(DATASET) \
+HYDRA_ALL_ARGS = num_cpus=$(NUM_CPUS) num_gpus=$(NUM_GPUS) \
 		 $(HYDRA_ARGS)
 
 ###############################################################################
