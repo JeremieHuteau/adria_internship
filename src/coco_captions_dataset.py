@@ -18,11 +18,13 @@ class CocoCaptions(torch.utils.data.Dataset):
     def __init__(self, images_dir, annotations_file, 
             transform=None,
             #image_transform=None, caption_transform=None,
-            image_select=None, caption_select=None):
+            image_select=None, caption_select=None,
+            iterate_on_captions=False):
         super(CocoCaptions, self).__init__()
 
         self.images_dir = images_dir
         self.annotations_file = annotations_file
+        self.iterate_on_captions = iterate_on_captions
 
         self.transform = transform
 
@@ -36,28 +38,53 @@ class CocoCaptions(torch.utils.data.Dataset):
         self.data = load_annotations_file(annotations_file)
 
         self.images = {}
+        self.annotations = {}
         self.img2ann = defaultdict(list)
+        self.ann2img = defaultdict(list)
 
         self._create_index()
         self.img_ids = list(sorted(self.images.keys()))
+        self.ann_ids = list(sorted(self.annotations.keys()))
 
     def _create_index(self):
         for ann in self.data['annotations']:
             self.img2ann[ann['image_id']].append(ann)
+
+        # filter images with < 5 captions, and captions > 5
         for image_id, annotation_list in self.img2ann.items():
             if len(annotation_list) < 5:
                 self.img2ann.pop(image_id)
                 continue
             self.img2ann[image_id] = annotation_list[:5]
+
         for img in self.data['images']:
             if img['id'] in self.img2ann:
                 self.images[img['id']] = img
 
-    def __getitem__(self, idx):
-        image_id = self.img_ids[idx]
+        for ann in self.data['annotations']:
+            if ann['image_id'] in self.img2ann:
+                self.annotations[ann['id']] = ann
+                self.ann2img[ann['id']].append(self.images[ann['image_id']])
 
-        images_data = [self.images[image_id]]
-        images_data = self.image_select(images_data)
+
+    def __getitem__(self, idx):
+        
+        if self.iterate_on_captions:
+            annotation_id = self.ann_ids[idx]
+
+            annotations_data = [self.annotations[annotation_id]]
+            annotations_data = self.caption_select(annotations_data)
+
+            images_data = self.ann2img[annotation_id]
+            images_data = self.image_select(images_data)
+        else:
+            image_id = self.img_ids[idx]
+
+            images_data = [self.images[image_id]]
+            images_data = self.image_select(images_data)
+
+            annotations_data = self.img2ann[image_id]
+            annotations_data = self.caption_select(annotations_data)
 
         images = []
         for image_data in images_data:
@@ -66,9 +93,6 @@ class CocoCaptions(torch.utils.data.Dataset):
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             images.append(image)
         image_ratios = [image.shape[0]/image.shape[1] for image in images]
-
-        annotations_data = self.img2ann[image_id]
-        annotations_data = self.caption_select(annotations_data)
 
         captions = [ann_data['caption'] for ann_data in annotations_data]
 
@@ -100,7 +124,10 @@ class CocoCaptions(torch.utils.data.Dataset):
         }
 
     def __len__(self):
-        return len(self.img_ids)
+        if self.iterate_on_captions:
+            return len(self.ann_ids)
+        else:
+            return len(self.img_ids)
 
 def captions(annotations_file):
     annotations = load_annotations_file(annotations_file)['annotations']

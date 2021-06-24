@@ -2,7 +2,8 @@ import os
 import itertools
 import operator
 import random
-from typing import Optional, List
+from collections import defaultdict
+from typing import Dict, Optional, List
 
 import numpy as np
 import torch
@@ -40,6 +41,7 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
             batch_size: int, 
             transforms_cfg: dict,
             single_caption: bool = True,
+            iterate_on_captions: Dict[str,bool] = {},
             num_workers: int = 0, pin_memory: bool = False,
             ):
         super().__init__()
@@ -55,6 +57,9 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
                 transforms_cfg['test'],
                 factories.TransformFactory)
 
+        if (not single_caption) and iterate_on_captions['train']:
+            raise ValueError(f"single_caption={single_caption} "
+                f"and iterate_on_captions={iterate_on_captions}")
         if single_caption:
             self.text_train_select = self._select_random
             self.text_test_select = self._select_first
@@ -62,6 +67,10 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
             print("Multiple captions not supported due to"
                     " augmentation pipeline.")
             self.text_train_select = self.text_test_select = lambda x: x
+
+        self.iterate_on_captions = defaultdict(lambda: False)
+        for k,v in iterate_on_captions.items():
+            self.iterate_on_captions[k] = v
 
     def _select_first(self, x: List) -> List:
         return [x[0]]
@@ -77,20 +86,23 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
                     os.path.join(self.root_dir, self.images_dir), 
                     os.path.join(self.root_dir, self.train_annotations_file),
                     transform = self.train_transform,
-                    caption_select = self.text_train_select)
+                    caption_select = self.text_train_select,
+                    iterate_on_captions=self.iterate_on_captions['train'])
 
             self.val = coco_captions_dataset.CocoCaptions(
                     os.path.join(self.root_dir, self.images_dir), 
                     os.path.join(self.root_dir, self.val_annotations_file),
                     transform = self.test_transform,
-                    caption_select = self.text_test_select)
+                    caption_select = self.text_test_select,
+                    iterate_on_captions=self.iterate_on_captions['val'])
 
         if stage == 'test' or stage is None:
             self.test = coco_captions_dataset.CocoCaptions(
                     os.path.join(self.root_dir, self.images_dir), 
                     os.path.join(self.root_dir, self.test_annotations_file),
                     transform = self.test_transform,
-                    caption_select = self.text_test_select)
+                    caption_select = self.text_test_select,
+                    iterate_on_captions=self.iterate_on_captions['test'])
 
     def _collate_fn(self, batch):
         """
@@ -181,23 +193,20 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
         }
         return batch
 
-    def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.train,
-                batch_size=self.batch_size, shuffle=True,
-                num_workers=self.num_workers, pin_memory=self.pin_memory,
-                collate_fn=self._collate_fn,
-                drop_last=True,
-                worker_init_fn=worker_init_fn)
-    def _shared_test_dataloader(self, dataset):
+    def _shared_dataloader(self, dataset, **kwargs):
         return torch.utils.data.DataLoader(dataset,
                 batch_size=self.batch_size,
                 num_workers=self.num_workers, pin_memory=self.pin_memory,
                 collate_fn=self._collate_fn,
-                worker_init_fn=worker_init_fn)
+                worker_init_fn=worker_init_fn,
+                **kwargs)
+    def train_dataloader(self):
+        return self._shared_dataloader(self.train,
+                shuffle=True, drop_last=True)
     def val_dataloader(self):
-        return self._shared_test_dataloader(self.val)
+        return self._shared_dataloader(self.val)
     def test_dataloader(self):
-        return self._shared_test_dataloader(self.test)
+        return self._shared_dataloader(self.test)
 
     def visualize_batch(self, batch, normalization_parameters, vocabulary, num_display=2):
         import matplotlib.pyplot as plt

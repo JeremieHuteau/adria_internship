@@ -9,6 +9,8 @@ data:
   kwargs:
     batch_size: 64
     single_caption: True
+    iterate_on_captions: 
+      train: True
 
 transforms:
   image:
