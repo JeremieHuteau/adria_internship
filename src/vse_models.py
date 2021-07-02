@@ -80,20 +80,25 @@ class ResNetEncoder(nn.Module):
 
 class GruEncoder(nn.Module):
     def __init__(self, hidden_size, vocabulary_size, token_embedding_size,
-            num_layers=1, bidirectional=True):
+            num_layers=1, bidirectional=True, aggregation='sum'):
         super(GruEncoder, self).__init__()
 
         self.token_embedding = nn.Embedding(
                 vocabulary_size, token_embedding_size)
+        token_embedding_std = math.sqrt(1./token_embedding_size)
+        nn.init.normal_(self.token_embedding.weight,
+                mean=1., std=token_embedding_std)
 
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.bidirectional = bidirectional
+        self.aggregation = aggregation
 
         self.gru = nn.GRU(token_embedding_size, self.hidden_size, 
                 self.num_layers, bidirectional=self.bidirectional, batch_first=True)
         
-        self.embedding_size = hidden_size * (1+self.bidirectional)
+        self.embedding_size = hidden_size * (1 + 
+                self.bidirectional * (self.aggregation=='cat'))
 
     def forward(self, x, lengths):
         batch_size = lengths.size(0)
@@ -111,6 +116,10 @@ class GruEncoder(nn.Module):
             )[-1]\
             .transpose(0, 1)\
             .reshape(batch_size, (1+self.bidirectional)*self.hidden_size)
+
+        if self.bidirectional and self.aggregation == 'sum':
+            h = h.view(batch_size, -1, self.hidden_size)
+            h = h[:,0,:] + h[:,1,:]
 
         return h
 
@@ -180,8 +189,8 @@ class VSE(pl.LightningModule):
                 text_encoder_cfg['name'],
                 embedding_size,
                 **text_encoder_cfg['kwargs'])
-        self.text_projection = nn.Linear(
-                self.text_encoder.embedding_size, embedding_size)
+        #self.text_projection = nn.Linear(
+        #        self.text_encoder.embedding_size, embedding_size)
 
         self.modality_normalization = modality_normalization
         self.joint_normalization = joint_normalization
@@ -234,9 +243,9 @@ class VSE(pl.LightningModule):
         if texts is not None:
             with self.profiler.profile('text_forward'):
                 text_embeddings = self.text_encoder(texts, lengths)
-                if self.modality_normalization:
-                    text_embeddings = self.normalization(text_embeddings)
-                text_embeddings = self.text_projection(text_embeddings)
+                #if self.modality_normalization:
+                #    text_embeddings = self.normalization(text_embeddings)
+                #text_embeddings = self.text_projection(text_embeddings)
                 if self.joint_normalization:
                     text_embeddings = self.normalization(text_embeddings)
 
