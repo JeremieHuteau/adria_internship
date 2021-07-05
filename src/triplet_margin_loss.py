@@ -84,7 +84,8 @@ class HardestFractionDecay(pl.callbacks.Callback):
                 self.initial_hardest_fraction * decay)
 
         pl_module.loss.hardest_fraction = new_fraction
-        pl_module.log('loss.hardest_fraction', new_fraction)
+        pl_module.log('loss.hardest_fraction', new_fraction, 
+                on_step=True, on_epoch=False)
 
 # naive python implementation
 def naive_hardest_fraction_triplet_margin_loss(preds, targets, margin, hardest_fraction):

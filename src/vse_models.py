@@ -291,8 +291,8 @@ class VSE(pl.LightningModule):
         loss, metric_values = self._shared_step_end(
             training_step_outputs, self.training_metrics)
 
-        self.log('train/loss', loss)
-        self.log_dict(metric_values)
+        self.log('train/loss', loss, on_step=True, on_epoch=False)
+        self.log_dict(metric_values, on_step=True, on_epoch=False)
 
         return {
             'loss': loss, 
