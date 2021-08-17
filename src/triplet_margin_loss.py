@@ -3,8 +3,7 @@ import torch
 import pytorch_lightning as pl
 
 class HardestTripletMarginLoss(torch.nn.Module):
-    def __init__(self, margin: float, hardest_fraction: float = 0.0,
-            single_positive: bool = False): 
+    def __init__(self, margin: float, hardest_fraction: float = 0.0):
         """
             Computes a triplet margin ranking loss on similarity scores.
 
@@ -18,23 +17,15 @@ class HardestTripletMarginLoss(torch.nn.Module):
         
         self.margin = margin
         self.hardest_fraction = hardest_fraction
-        self.single_positive = single_positive
 
-    def forward(self, preds, targets, indices_1, indices_2):
-        # Select implementation based on number of positives and 
-        # fraction of hardest triplets to consider.
-        if self.single_positive:
+    def forward(self, preds, targets):
+        if self.hardest_fraction <= 0.0:
             tml = lambda p,t:\
-                single_hardest_fraction_triplet_margin_loss(
-                    p, t, self.margin, self.hardest_fraction)
+                hardest_triplet_margin_loss(p, t, self.margin)
         else:
-            if self.hardest_fraction <= 0.0:
-                tml = lambda p,t:\
-                    hardest_triplet_margin_loss(p, t, self.margin)
-            else:
-                tml = lambda p,t:\
-                    chunked_hardest_fraction_triplet_margin_loss(
-                        p, t, self.margin, self.hardest_fraction)
+            tml = lambda p,t:\
+                chunked_hardest_fraction_triplet_margin_loss(
+                    p, t, self.margin, self.hardest_fraction)
 
         loss1 = tml(preds, targets)
         loss2 = tml(preds.t(), targets.t())

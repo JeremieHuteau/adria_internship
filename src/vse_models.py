@@ -11,7 +11,7 @@ import torchmetrics
 import factories
 import vision_modules as vnn
 import evaluation
-import retrieval_metrics
+import retrieval_metrics as rm
 import triplet_margin_loss
 
 class BasicCnnEncoder(nn.Module):
@@ -189,8 +189,6 @@ class VSE(pl.LightningModule):
                 text_encoder_cfg['name'],
                 embedding_size,
                 **text_encoder_cfg['kwargs'])
-        #self.text_projection = nn.Linear(
-        #        self.text_encoder.embedding_size, embedding_size)
 
         self.modality_normalization = modality_normalization
         self.joint_normalization = joint_normalization
@@ -200,28 +198,33 @@ class VSE(pl.LightningModule):
         self.similarity = DotProduct()
         self.loss = triplet_margin_loss.HardestTripletMarginLoss(
                 margin=loss_cfg['margin'],
-                hardest_fraction=loss_cfg['hardest_fraction'], 
-                single_positive=single_positive)
-        
-        k = 1
-        self.r_at_k_str = f'R@{k}'
+                hardest_fraction=loss_cfg['hardest_fraction']) 
+
+        ks = [1, 5, 10]
+        query_target_strs = ['image2text', 'text2image']
+
         batch_metrics = torchmetrics.MetricCollection({
-                self.r_at_k_str: retrieval_metrics.CrossmodalRecallAtK(
-                    k, k, matrix_preds=single_positive)
-                })
-        self.training_metrics = batch_metrics.clone(prefix="train/")
+            "MeanCrossRecall@1": rm.CrossmodalRecallAtK(1, 1)
+        })
+        self.training_batch_metrics = batch_metrics.clone(prefix="train/")
         self.validation_batch_metrics = batch_metrics.clone(prefix="val/")
 
-        image_metrics = torchmetrics.MetricCollection({
-                f'I2T_{self.r_at_k_str}': retrieval_metrics.RecallAtK(
-                    k, matrix_preds=single_positive),
-                })
-        text_metrics = torchmetrics.MetricCollection({
-                f'T2I_{self.r_at_k_str}': retrieval_metrics.RecallAtK(
-                    k, matrix_preds=single_positive),
-                })
-        self.validation_image_metrics = image_metrics.clone(prefix="val/")
-        self.validation_text_metrics = text_metrics.clone(prefix="val/")
+        self.validation_binary_metrics = nn.ModuleDict({
+            qt: torchmetrics.MetricCollection({
+                f"{qt}_Retrieval@{k}": rm.RetrievalAtK(k)
+                for k in ks
+            }, prefix='val/')
+            for qt in query_target_strs})
+        self.validation_ratio_metrics = nn.ModuleDict({
+            qt: torchmetrics.MetricCollection({
+                **{
+                    f"{qt}_Recall@{k}": rm.RecallAtK(k)
+                    for k in ks
+                },
+                f"{qt}_MeanRank": rm.MeanRank(),
+            }, prefix='val/')
+            for qt in query_target_strs
+        })
 
         self._optimizer_cfg = optimizer_cfg
         self._scheduler_cfg = scheduler_cfg
@@ -243,9 +246,6 @@ class VSE(pl.LightningModule):
         if texts is not None:
             with self.profiler.profile('text_forward'):
                 text_embeddings = self.text_encoder(texts, lengths)
-                #if self.modality_normalization:
-                #    text_embeddings = self.normalization(text_embeddings)
-                #text_embeddings = self.text_projection(text_embeddings)
                 if self.joint_normalization:
                     text_embeddings = self.normalization(text_embeddings)
 
@@ -273,14 +273,14 @@ class VSE(pl.LightningModule):
         scores = self.similarity(images, texts)
 
         targets, indices_images, indices_texts = \
-                retrieval_metrics.positive_sparse2dense(
+                rm.positive_sparse2dense(
                     positive_pairs, [scores.size(0), scores.size(1)])
             
-        loss = self.loss(scores, targets, indices_images, indices_texts)
+        loss = self.loss(scores, targets)
 
         metric_values = {}
         if metrics is not None:
-            metric_values = metrics(scores, targets, indices_images, indices_texts)
+            metric_values = metrics(scores, targets)
 
         return loss, metric_values
 
@@ -289,7 +289,7 @@ class VSE(pl.LightningModule):
 
     def training_step_end(self, training_step_outputs):
         loss, metric_values = self._shared_step_end(
-            training_step_outputs, self.training_metrics)
+            training_step_outputs, self.training_batch_metrics)
 
         self.log('train/loss', loss, on_step=True, on_epoch=False)
         self.log_dict(metric_values, on_step=True, on_epoch=False)
@@ -317,18 +317,26 @@ class VSE(pl.LightningModule):
             source_key='images', target_key='texts', 
             swap_positive_pairs=False,
             score_fn=self.similarity, 
-            metrics=self.validation_image_metrics
+            metrics={
+                'binary': self.validation_binary_metrics['image2text'],
+                'ratio': self.validation_ratio_metrics['image2text'],
+            }
         )
         t2i_metric_values = evaluation.batch_retrieval(
             validation_step_outputs,
             source_key='texts', target_key='images', 
             swap_positive_pairs=True,
             score_fn=self.similarity, 
-            metrics=self.validation_text_metrics
+            metrics={
+                'binary': self.validation_binary_metrics['text2image'],
+                'ratio': self.validation_ratio_metrics['text2image'],
+            }
         )
 
-        self.log_dict(i2t_metric_values, on_epoch=True)
-        self.log_dict(t2i_metric_values, on_epoch=True)
+        self.log_dict(i2t_metric_values['binary'], on_epoch=True)
+        self.log_dict(i2t_metric_values['ratio'], on_epoch=True)
+        self.log_dict(t2i_metric_values['binary'], on_epoch=True)
+        self.log_dict(t2i_metric_values['ratio'], on_epoch=True)
 
     def configure_optimizers(self):
         optimizer = factories.OptimizerFactory.create(

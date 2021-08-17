@@ -2,16 +2,18 @@ import os
 import itertools
 import operator
 import random
+from collections import defaultdict
 from typing import Optional, List
 
 import numpy as np
 import torch
 import torchvision
-import albumentations as alb
+#import albumentations as alb
 import pytorch_lightning as pl
 
 import coco_captions_dataset
 import factories
+import transforms
 
 def worker_init_fn(worker_id):
     """https://github.com/pytorch/pytorch/issues/5059"""
@@ -20,13 +22,24 @@ def worker_init_fn(worker_id):
     ss = np.random.SeedSequence([worker_id, base_seed])
     np.random.seed(ss.generate_state(4))
 
-def make_transform(transform_cfgs, factory):
+def make_transform(transform_cfgs, transform_mapping, factory):
     individual_transforms = []
     for transform_cfg in transform_cfgs:
         individual_transforms.append(factory.create(
-                transform_cfg['name'], 
-                **transform_cfg['kwargs']))
-    return alb.Compose(individual_transforms)
+            transform_cfg['name'], 
+            **transform_cfg['kwargs']))
+    transform = transforms.SetCompose(
+        individual_transforms)
+    transform.target_sets = transform_mapping
+    print(transform)
+    return transform
+
+def select_first(x: List) -> List:
+    return [x[0]]
+def select_random(x: List) -> List:
+    return [random.choice(x)]
+def select_all(x: List) -> List:
+    return x
 
 class CocoCaptionsDataModule(pl.LightningDataModule):
     images_dir = 'images/'
@@ -39,7 +52,7 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
             root_dir: str, 
             batch_size: int, 
             transforms_cfg: dict,
-            single_caption: bool = True,
+            num_positives: dict = {},
             num_workers: int = 0, pin_memory: bool = False,
             ):
         super().__init__()
@@ -49,24 +62,19 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
         self.pin_memory = pin_memory
 
         self.train_transform = make_transform(
-                transforms_cfg['train'],
+                transforms_cfg['train'], transforms_cfg['set_mapping'],
                 factories.TransformFactory)
         self.test_transform = make_transform(
-                transforms_cfg['test'],
+                transforms_cfg['test'], transforms_cfg['set_mapping'],
                 factories.TransformFactory)
 
-        if single_caption:
-            self.text_train_select = self._select_random
-            self.text_test_select = self._select_first
-        else:
-            print("Multiple captions not supported due to"
-                    " augmentation pipeline.")
-            self.text_train_select = self.text_test_select = lambda x: x
-
-    def _select_first(self, x: List) -> List:
-        return [x[0]]
-    def _select_random(self, x: List) -> List:
-        return [random.choice(x)]
+        num_positives_fn = {
+            'first': select_first,
+            'random': select_random,
+            'all': select_all,
+        }
+        self.text_train_select = num_positives_fn[num_positives['train']]
+        self.text_test_select = num_positives_fn[num_positives['test']]
 
     def prepare_data(self):
         pass
@@ -206,7 +214,6 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
         images = batch['images'][:num_display]
         positive_pairs = batch['positive_pairs']
         captions = batch['texts']
-        #captions = list(map(lambda d: d['caption'], batch['annotations_data']))
 
         print(positive_pairs)
         print(captions)
@@ -233,7 +240,6 @@ class CocoCaptionsDataModule(pl.LightningDataModule):
             texts = map(lambda t: vocabulary.idx2doc(t), texts)
             texts = map(lambda t: ' '.join(t), texts)
             texts = '\n'.join(texts)
-
 
             fig, axes = plt.subplots()
             axes.set(xlabel = texts)

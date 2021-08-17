@@ -17,7 +17,6 @@ def identity(x): return x
 class CocoCaptions(torch.utils.data.Dataset):
     def __init__(self, images_dir, annotations_file, 
             transform=None,
-            #image_transform=None, caption_transform=None,
             image_select=None, caption_select=None):
         super(CocoCaptions, self).__init__()
 
@@ -73,21 +72,9 @@ class CocoCaptions(torch.utils.data.Dataset):
         captions = [ann_data['caption'] for ann_data in annotations_data]
 
         if self.transform is not None:
-            #data = self.transform(image=images[0], text=captions[0])
-            #images = [data['image']]
-            #captions = [data['text']]
-
-            transformed_captions = []
-            for caption in captions:
-                data = self.transform(text=caption, image=images[0])
-                transformed_captions.append(data['text'])
-            captions = transformed_captions
-
-            transformed_images = []
-            for image in images:
-                data = self.transform(image=image)
-                transformed_images.append(data['image'])
-            images = transformed_images
+            data = self.transform(images=images, texts=captions)
+            images = data['images']
+            captions = data['texts']
 
         return {
             'images': images,

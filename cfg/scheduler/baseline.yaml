@@ -8,4 +8,4 @@ kwargs:
   cooldown: 0
 pl_kwargs:
   interval: epoch
-  monitor: train/R@1
+  monitor: train/MeanCrossRecall@1

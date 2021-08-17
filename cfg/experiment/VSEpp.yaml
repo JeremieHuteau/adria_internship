@@ -15,9 +15,9 @@ seed: 0
 data:
   kwargs:
     batch_size: 128
-    single_caption: True
-    iterate_on_captions: 
-      train: True
+    num_positives:
+      train: 'random'
+      test: 'first'
 
 model:
   name: VSE

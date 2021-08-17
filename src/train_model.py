@@ -55,10 +55,11 @@ def main(cfg):
 
     experiment_checkpoints_dir = os.path.join(
             cfg['paths']['checkpoints_dir'], experiment_key)
+    monitor_name = 'val/MeanCrossRecall@1'
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            monitor='val/R@1', mode='max',
+            monitor=monitor_name, mode='max',
             dirpath=experiment_checkpoints_dir, 
-            filename=experiment_key + '-{epoch}-val_R@1={val/R@1:.3f}',
+            filename=experiment_key + '-{epoch}-val_R@1={'+monitor_name+':.3f}',
             auto_insert_metric_name=False,
             )
     callbacks = [
@@ -121,7 +122,7 @@ def main(cfg):
 
     if cfg['tune']:
         lr_finder = trainer.tuner.lr_find(model, datamodule,
-                min_lr=1e-6, num_training=100, early_stop_threshold=4.0)
+                min_lr=1e-6, num_training=1000, early_stop_threshold=4.0)
         output_filename = os.path.join(
                cfg['paths']['logs_dir'],  
                cfg['experiment_name'],

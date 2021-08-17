@@ -9,7 +9,7 @@ def rel_close(a, b, threshold):
         a, b = b, a
     a += 1e-9
     b += 1e-9
-    return (a/b - 1) < threshold
+    return ((a/b - 1) < threshold) or (a < 1e-8)
 
 def constant_tuple_numels(c1, c2):
     return c1, c2
@@ -341,6 +341,11 @@ def test_recall_at_k():
             scores.reshape(-1), targets.reshape(-1), indices, loss_fn).mean()
         return loss
 
+    def vectorized2(scores, targets, k):
+        ranks = rm.target_ranks(scores, targets)
+        counts = rm.target_counts(targets)
+        return rm.recalls_at_k(k, ranks, counts)
+
     seed = 0
     random.seed(seed)
     torch.manual_seed(seed)
@@ -351,12 +356,14 @@ def test_recall_at_k():
     max_positives = 5
 
     functions = {
-        'naive'     : lambda p,t,i,k:
+        'naive': lambda p,t,i,k:
             torch.mean(torch.tensor(rm.naive_recall_at_k(p,t,k))),
-        'anchor'     : lambda p,t,i,k:
+        'anchor': lambda p,t,i,k:
             torch.mean(sparse_recall_fn(p,t,i,k)),
-        'vectorized'     : lambda p,t,i,k:
+        'vectorized': lambda p,t,i,k:
             torch.mean(rm.recall_at_k(p,t,k)),
+        'vectorized2': lambda p,t,i,k:
+            torch.mean(vectorized2(p, t, k))
     }
 
     #(Single|Constant|Multiple)Positives_Hardest[Fraction]
@@ -365,8 +372,8 @@ def test_recall_at_k():
         'MP': ('random', 'random'),
     }
     group_functions = {
-        'SP': ['naive', 'anchor', 'vectorized'],
-        'MP': ['naive', 'anchor', 'vectorized'],
+        'SP': ['naive', 'anchor', 'vectorized', 'vectorized2'],
+        'MP': ['naive', 'anchor', 'vectorized', 'vectorized2'],
     }
 
     error_threshold = 1e-6

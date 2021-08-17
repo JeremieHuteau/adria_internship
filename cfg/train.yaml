@@ -28,11 +28,6 @@ tune: False
 data:
   kwargs:
     batch_size: 128
-    single_caption: True
-
-model:
-  kwargs:
-    single_positive: ${data.kwargs.single_caption}
 
 loss:
   margin: 0.2
