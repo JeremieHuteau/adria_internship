@@ -17,7 +17,7 @@ data:
     batch_size: 128
     num_positives:
       train: 'random'
-      test: 'first'
+      test: 'all'
 
 model:
   name: VSE
@@ -50,20 +50,20 @@ optimizer:
 scheduler:
   name: MultiStepLR
   kwargs:
-    milestones: [15]
+    milestones: [75]
     gamma: 0.1
   pl_kwargs:
     interval: epoch
 
 trainer:
   kwargs:
-    max_epochs: 45
+    max_epochs: 225
     gradient_clip_val: 2.0
   callbacks: 
     - name: Unfreezing
       kwargs:
         milestones:
-          'image_encoder': 30
+          'image_encoder': 150
     - name: HardestFractionDecay
       kwargs:
         total_steps: 5000
