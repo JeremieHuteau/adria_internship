@@ -190,7 +190,7 @@ def chunked_hardest_fraction_triplet_margin_loss(
 
     unique_num_positives = num_positives.unique()
 
-    loss = torch.tensor(0.0)
+    loss = torch.tensor(0.0, device=preds.device)
     for i, single_num_positives in enumerate(unique_num_positives):
         group_indices = (num_positives == single_num_positives)\
             .nonzero(as_tuple=True)
@@ -198,7 +198,6 @@ def chunked_hardest_fraction_triplet_margin_loss(
         group_loss = constant_hardest_fraction_triplet_margin_loss(
                 preds[group_indices], targets[group_indices], 
                 margin, hardest_fraction)
-
         loss += group_loss * group_indices[0].size(0)
     loss /= preds.size(0)
 

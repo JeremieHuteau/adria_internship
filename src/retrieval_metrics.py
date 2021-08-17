@@ -106,7 +106,7 @@ def target_ranks(preds, targets):
     sorted_preds_indices = preds.argsort(dim=-1, descending=True)
     sorted_targets = targets.gather(-1, sorted_preds_indices)
 
-    ranks = torch.arange(1, sorted_targets.size(-1)+1)
+    ranks = torch.arange(1, sorted_targets.size(-1)+1, device=preds.device)
     target_ranks = sorted_targets * ranks
     return target_ranks
 
