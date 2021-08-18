@@ -135,6 +135,10 @@ class OptimizerFactory(Factory):
     }
 class SchedulerFactory(Factory):
     PRODUCTS: Dict[str, Callable] = {
+            'LinearWarmup': lambda *a, num_warmup_steps: torch.optim.lr_scheduler.LambdaLR(
+                *a,
+                lambda step: min(step/num_warmup_steps, 1.0)
+            ),
             'MultiStepLR': torch.optim.lr_scheduler.MultiStepLR,
             'ReduceLROnPlateau': torch.optim.lr_scheduler.ReduceLROnPlateau,
     }

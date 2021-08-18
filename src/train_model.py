@@ -64,9 +64,7 @@ def main(cfg):
             )
     callbacks = [
         checkpoint_callback,
-        pl.callbacks.LearningRateMonitor(
-                logging_interval=cfg['scheduler']['pl_kwargs']['interval'], 
-                log_momentum=True),
+        pl.callbacks.LearningRateMonitor(log_momentum=True),
     ]
     if (cfg['num_gpus'] > 0):
         callbacks.append(pl.callbacks.GPUStatsMonitor(

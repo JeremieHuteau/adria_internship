@@ -343,11 +343,21 @@ class VSE(pl.LightningModule):
                 self._optimizer_cfg['name'], 
                 self.parameters(),
                 **self._optimizer_cfg['kwargs'])
-        scheduler = {
+
+        scheduler_cfgs = self._scheduler_cfg
+        if not isinstance(self._scheduler_cfg, list):
+            scheduler_cfgs = [scheduler_cfgs]
+
+        schedulers = []
+        for scheduler_cfg in scheduler_cfgs:
+            scheduler_dict = {
                 'scheduler': factories.SchedulerFactory.create(
-                    self._scheduler_cfg['name'],
+                    scheduler_cfg['name'],
                     optimizer,
-                    **self._scheduler_cfg['kwargs']),
-                **self._scheduler_cfg['pl_kwargs']}
-        return [optimizer], [scheduler]
+                    **scheduler_cfg['kwargs']),
+                **scheduler_cfg['pl_kwargs']
+            }
+            schedulers.append(scheduler_dict)
+
+        return [optimizer], schedulers
 

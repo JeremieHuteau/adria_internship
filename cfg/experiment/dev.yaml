@@ -2,6 +2,7 @@
 defaults:
   - override /model: small
   - override /transforms: baseline
+  - override /scheduler: null
 
 experience_name: dev
 
@@ -30,3 +31,21 @@ trainer:
       kwargs:
         total_steps: 100
         min_fraction: 0.95
+
+scheduler:
+  - name: LinearWarmup
+    kwargs:
+      num_warmup_steps: 500
+    pl_kwargs:
+      interval: step
+  - name: ReduceLROnPlateau
+    kwargs:
+      mode: min
+      factor: 0.5
+      patience: 5
+      threshold: 1e-2
+      threshold_mode: rel
+      cooldown: 0
+    pl_kwargs:
+      interval: epoch
+      monitor: train/MeanCrossRecall@1
