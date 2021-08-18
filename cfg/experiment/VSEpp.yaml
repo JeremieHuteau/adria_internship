@@ -48,18 +48,17 @@ optimizer:
     weight_decay: 0
 
 scheduler:
-  list:
-    - name: LinearWarmup
-      kwargs:
-        num_warmup_steps: 5000
-      pl_kwargs:
-        interval: step
-    - name: MultiStepLR
-      kwargs:
-        milestones: [75]
-        gamma: 0.1
-      pl_kwargs:
-        interval: epoch
+  - name: LinearWarmup
+    kwargs:
+      num_warmup_steps: 5000
+    pl_kwargs:
+      interval: step
+  - name: MultiStepLR
+    kwargs:
+      milestones: [75]
+      gamma: 0.1
+    pl_kwargs:
+      interval: epoch
 
 trainer:
   kwargs:
