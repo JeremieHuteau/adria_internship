@@ -25,7 +25,7 @@ loss:
 
 trainer:
   kwargs:
-    max_epochs: 5
+    max_epochs: 6
   callbacks: 
     - name: HardestFractionDecay
       kwargs:
@@ -33,19 +33,14 @@ trainer:
         min_fraction: 0.95
 
 scheduler:
-  - name: LinearWarmup
+  - name: LinearLRWarmup
     kwargs:
-      num_warmup_steps: 500
+      num_warmup_steps: 200
     pl_kwargs:
       interval: step
-  - name: ReduceLROnPlateau
+  - name: MultiStepLR
     kwargs:
-      mode: min
-      factor: 0.5
-      patience: 5
-      threshold: 1e-2
-      threshold_mode: rel
-      cooldown: 0
+      milestones: [5]
+      gamma: 0.1
     pl_kwargs:
       interval: epoch
-      monitor: train/MeanCrossRecall@1

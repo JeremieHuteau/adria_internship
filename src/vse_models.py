@@ -136,36 +136,6 @@ class DotProduct(nn.Module):
     def forward(self, x1, x2):
         return torch.matmul(x1, x2.t())
 
-class Unfreezing(pl.callbacks.Callback):
-    """
-        Freezes the given modules on training start, and unfreezes them 
-        once their unfreezing epoch is reached.
-    """
-    def __init__(self, milestones: Dict[str, int], verbose: bool = False):
-        super().__init__()
-        self.milestones = milestones
-        self.verbose = verbose
-
-    def _get_object(self, pl_module, attr_str):
-        attrs = attr_str.split('.')
-        current_object = pl_module
-        for attr in attrs:
-            current_object = getattr(current_object, attr)
-        return current_object
-
-    def on_train_start(self, trainer, pl_module):
-        for attr in self.milestones:
-            self._get_object(pl_module, attr).requires_grad_(False)
-            if self.verbose:
-                print(f"Freezing {attr}")
-
-    def on_train_epoch_start(self, trainer, pl_module):
-        for attr, epoch in self.milestones.items():
-            if epoch == trainer.current_epoch:
-                self._get_object(pl_module, attr).requires_grad_(True)
-                if self.verbose:
-                    print(f"Unfreezing {attr}")
-
 class VSE(pl.LightningModule):
     def __init__(self, embedding_size, 
             image_encoder_cfg, text_encoder_cfg,
@@ -360,4 +330,34 @@ class VSE(pl.LightningModule):
             schedulers.append(scheduler_dict)
 
         return [optimizer], schedulers
+
+class Unfreezing(pl.callbacks.Callback):
+    """
+        Freezes the given modules on training start, and unfreezes them 
+        once their unfreezing epoch is reached.
+    """
+    def __init__(self, milestones: Dict[str, int], verbose: bool = False):
+        super().__init__()
+        self.milestones = milestones
+        self.verbose = verbose
+
+    def _get_object(self, pl_module, attr_str):
+        attrs = attr_str.split('.')
+        current_object = pl_module
+        for attr in attrs:
+            current_object = getattr(current_object, attr)
+        return current_object
+
+    def on_train_start(self, trainer, pl_module):
+        for attr in self.milestones:
+            self._get_object(pl_module, attr).requires_grad_(False)
+            if self.verbose:
+                print(f"Freezing {attr}")
+
+    def on_train_epoch_start(self, trainer, pl_module):
+        for attr, epoch in self.milestones.items():
+            if epoch == trainer.current_epoch:
+                self._get_object(pl_module, attr).requires_grad_(True)
+                if self.verbose:
+                    print(f"Unfreezing {attr}")
 

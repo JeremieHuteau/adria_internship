@@ -128,6 +128,7 @@ class TextModelFactory(Factory):
     }
 
 import torch.optim
+import optim
 class OptimizerFactory(Factory):
     PRODUCTS: Dict[str, Callable] = {
             'Adam': torch.optim.Adam,
@@ -135,10 +136,11 @@ class OptimizerFactory(Factory):
     }
 class SchedulerFactory(Factory):
     PRODUCTS: Dict[str, Callable] = {
-            'LinearWarmup': lambda *a, num_warmup_steps: torch.optim.lr_scheduler.LambdaLR(
-                *a,
-                lambda step: min(step/num_warmup_steps, 1.0)
-            ),
+            #'LinearWarmup': lambda *a, num_warmup_steps: torch.optim.lr_scheduler.LambdaLR(
+            #    *a,
+            #    lambda step: min(step/num_warmup_steps, 1.0)
+            #),
+            'LinearLRWarmup': optim.LinearLRWarmup,
             'MultiStepLR': torch.optim.lr_scheduler.MultiStepLR,
             'ReduceLROnPlateau': torch.optim.lr_scheduler.ReduceLROnPlateau,
     }

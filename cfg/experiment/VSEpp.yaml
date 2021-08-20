@@ -38,19 +38,19 @@ model:
 
 loss:
   margin: 0.2
-  hardest_fraction: 1.0
+  hardest_fraction: 0.0
 
 optimizer:
   name: Adam
   kwargs:
-    lr: 1e-2
+    lr: 2e-4
     betas: [0.9, 0.999]
     weight_decay: 0
 
 scheduler:
-  - name: LinearWarmup
+  - name: LinearLRWarmup
     kwargs:
-      num_warmup_steps: 5000
+      num_warmup_steps: 1000
     pl_kwargs:
       interval: step
   - name: MultiStepLR
