@@ -29,8 +29,10 @@ trainer:
   callbacks: 
     - name: HardestFractionDecay
       kwargs:
-        total_steps: 100
-        min_fraction: 0.95
+        total_steps: 500
+        min_fraction: 0.0
+        schedule: hyperbolic
+        k: 16
 
 scheduler:
   - name: LinearLRWarmup

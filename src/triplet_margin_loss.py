@@ -34,11 +34,12 @@ class HardestTripletMarginLoss(torch.nn.Module):
         return loss
 
 class HardestFractionDecay(pl.callbacks.Callback):
-    _schedules = ['cosine', 'linear']
+    _schedules = ['linear', 'hyperbolic', 'cosine']
     def __init__(self, 
             total_steps: int, 
             min_fraction: float = 0.0,
             schedule: str = 'cosine',
+            k: float = None,
         ):
         super().__init__()
         self.step_count = 0
@@ -47,7 +48,10 @@ class HardestFractionDecay(pl.callbacks.Callback):
 
         if schedule not in self._schedules:
             raise ValueError(f"schedule must be one of {self._schedules}")
+        if schedule == 'hyperbolic' and k is None:
+            raise ValueError("Hyperbolic schedule requires a k argument to control the curvature")
         self.schedule = schedule
+        self.k = k
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, 
             batch_idx, dataloader_idx):
@@ -66,6 +70,8 @@ class HardestFractionDecay(pl.callbacks.Callback):
 
         if self.schedule == 'linear':
             decay = 1 - steps_fraction
+        if self.schedule == 'hyperbolic':
+            decay = (1 - steps_fraction) / (1 + self.k * steps_fraction)
         if self.schedule == 'cosine':
             decay = 1 - math.cos(
                     (3 * math.pi / 2)
