@@ -71,11 +71,31 @@ class ResNetEncoder(nn.Module):
         architecture = getattr(torchvision.models, architecture_name)
         self.net = architecture(pretrained, progress, **kwargs)
 
-        self.embedding_size = self.net.fc.in_features
+        self.conv1 = nn.Conv2d(self.net.fc.in_features, hidden_size, 1)
+
         self.net.fc = nn.Sequential()
 
+        self.embedding_size = hidden_size
+
     def forward(self, x):
-        x = self.net(x)
+        return self._forward_impl(x)
+
+    def _forward_impl(self, x):
+        # See note [TorchScript super()]
+        x = self.net.conv1(x)
+        x = self.net.bn1(x)
+        x = self.net.relu(x)
+        x = self.net.maxpool(x)
+
+        x = self.net.layer1(x)
+        x = self.net.layer2(x)
+        x = self.net.layer3(x)
+        x = self.net.layer4(x)
+
+        x = self.conv1(x)
+        x = self.net.avgpool(x)
+        x = torch.flatten(x, 1)
+
         return x
 
 class GruEncoder(nn.Module):
@@ -208,7 +228,7 @@ class VSE(pl.LightningModule):
                 image_embeddings = self.image_encoder(images)
                 if self.modality_normalization:
                     image_embeddings = self.normalization(image_embeddings)
-                image_embeddings = self.image_projection(image_embeddings)
+                #image_embeddings = self.image_projection(image_embeddings)
                 if self.joint_normalization:
                     image_embeddings = self.normalization(image_embeddings)
 
