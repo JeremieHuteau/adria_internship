@@ -31,7 +31,6 @@ def make_transform(transform_cfgs, transform_mapping, factory):
     transform = transforms.SetCompose(
         individual_transforms)
     transform.target_sets = transform_mapping
-    print(transform)
     return transform
 
 def select_first(x: List) -> List:
