@@ -1,13 +1,16 @@
-defaults:
-  - vision@image_encoder: resnet50
-  - text@text_encoder: gru
-
-name: VSE
-
-kwargs:
-  embedding_size: 1024
-
-image_encoder:
+model:
+  name: VSE
   kwargs:
-    pretrained: True
-
+    embedding_size: 1024
+  image_encoder:
+    name: ResNet
+    kwargs: 
+      architecture_name: resnet34
+      pretrained: True
+  text_encoder:
+    name: GRU
+    kwargs:
+      vocabulary_size: ???
+      token_embedding_size: 300
+      num_layers: 1
+      bidirectional: False

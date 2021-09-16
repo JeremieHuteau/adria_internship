@@ -1,0 +1,27 @@
+# @package _global_
+
+experiment_name: VSE
+seed: 0
+
+data:
+  kwargs:
+    num_positives:
+      train: 'random' # 'random' for VSE++, 'all' for VSE**
+      test: 'all'
+
+loss:
+  margin: 0.2
+  hardest_fraction: 1.0
+
+trainer:
+  callbacks: 
+    - name: Unfreezing
+      kwargs:
+        milestones:
+          'image_encoder': 150
+    - name: HardestFractionDecay
+      kwargs:
+        total_steps: 10000
+        min_fraction: 0
+        schedule: hyperbolic
+        k: 16

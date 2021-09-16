@@ -7,10 +7,11 @@ defaults:
   - optimizer: baseline
   - scheduler: baseline
   - trainer: baseline
+  - experiment: VSEstar
 
 
 # Name of parent folder for artifacts, git tag
-experiment_name: vse_coco_test
+experiment_name: test
 
 # Global random seed (null = random seed)
 seed: 0
@@ -24,12 +25,4 @@ check_cfg: False
 visualize_inputs: False
 # Runs pytorch-lightning lr tuner then quit
 tune: False
-
-data:
-  kwargs:
-    batch_size: 128
-
-loss:
-  margin: 0.2
-  hardest_fraction: 0.0
 

@@ -11,9 +11,9 @@ import evaluation
 
 @hydra.main(config_name="train", config_path="../cfg")
 def main(cfg):
-    import json
     cfg = omegaconf.OmegaConf.to_container(cfg, resolve=True)
     if cfg['check_cfg']:
+        import json
         print(json.dumps(cfg, indent=2))
         return
 
